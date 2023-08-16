@@ -91,7 +91,9 @@ def get_abi_from_json(contract_name: str) -> dict:
             log.info(f"Successfully loaded ABI for contract: {contract_name}")
             return abi
     except FileNotFoundError:
-        log.error(f"Could not find ABI file for contract: {contract_name} at path: {abi_path}")
+        log.error(
+            f"Could not find ABI file for contract: {contract_name} at path: {abi_path}"
+        )
         raise
     except json.JSONDecodeError:
         log.error(f"Error decoding JSON for contract: {contract_name}")
@@ -151,7 +153,7 @@ def get_recent_tx_receipts(w3, nblocks):
     try:
         blocks = get_recent_blocks(w3, nblocks, refresh=True)
         tx_hashes = [tx_hash for block in blocks for tx_hash in block.transactions]
-        
+
         tx_receipts = [
             w3.eth.get_transaction_receipt(tx_hash)
             for tx_hash in track(
@@ -159,7 +161,9 @@ def get_recent_tx_receipts(w3, nblocks):
             )
         ]
 
-        log.info(f"Successfully fetched {len(tx_receipts)} transaction receipts from the last {nblocks} blocks.")
+        log.info(
+            f"Successfully fetched {len(tx_receipts)} transaction receipts from the last {nblocks} blocks."
+        )
         return tx_receipts
 
     except Exception as e:
@@ -169,21 +173,27 @@ def get_recent_tx_receipts(w3, nblocks):
 
 def get_recent_contracts(tx_receipts):
     recent_contracts = set()
-    
+
     for receipt in tx_receipts:
         for log in receipt.logs:
             recent_contracts.add(log["address"])
 
-    log.info(f"Successfully extracted {len(recent_contracts)} unique contract addresses from transaction receipts.")
-        
+    log.info(
+        f"Successfully extracted {len(recent_contracts)} unique contract addresses from transaction receipts."
+    )
+
     return recent_contracts
 
 
 @using_cache("active_pairs")
 def filter_inactive_pairs(w3, uniswap_pairs, nblocks):
     tx_receipts = get_recent_tx_receipts(w3, nblocks, refresh=True)
-    recent_contracts = get_recent_contracts(tx_receipts, refresh=True)
+    recent_contracts = get_recent_contracts(tx_receipts)
     active_pairs = [pair for pair in uniswap_pairs if pair in recent_contracts]
+
+    log.info(
+        f"Successfully filtered {len(active_pairs)} active pairs out of {len(uniswap_pairs)} total pairs."
+    )
 
     return active_pairs
 
