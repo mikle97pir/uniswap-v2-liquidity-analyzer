@@ -199,31 +199,46 @@ def filter_inactive_pairs(w3, uniswap_pairs, nblocks):
 
 
 def get_pair_info(w3, ABIs, pair):
-    pair_contract = w3.eth.contract(address=pair, abi=ABIs["UniswapV2Pair"])
-    token0 = pair_contract.functions.token0().call()
-    token1 = pair_contract.functions.token1().call()
-    reserves = pair_contract.functions.getReserves().call()
-    pair_info = {
-        "token0": token0,
-        "token1": token1,
-        "reserves": reserves,
-    }
-    return pair_info
+    try:
+        pair_contract = w3.eth.contract(address=pair, abi=ABIs["UniswapV2Pair"])
+        token0 = pair_contract.functions.token0().call()
+        token1 = pair_contract.functions.token1().call()
+        reserves = pair_contract.functions.getReserves().call()
+
+        pair_info = {
+            "token0": token0,
+            "token1": token1,
+            "reserves": reserves,
+        }
+
+        return pair_info
+
+    except Exception as e:
+        log.error(
+            f"Error retrieving pair info for pair address: {pair}. Error: {str(e)}"
+        )
+        raise
 
 
 def get_token_info(w3, ABIs, token):
     token_contract = w3.eth.contract(address=token, abi=ABIs["ERC20"])
 
+    # Handle symbol retrieval
     try:
         symbol = token_contract.functions.symbol().call()
-    except:
-        print("bad symbol", token)
+    except Exception as e:
+        log.warning(
+            f"Error retrieving symbol for token address: {token}. Error: {str(e)}. Defaulting to '__BAD_SYMBOL__'"
+        )
         symbol = "__BAD_SYMBOL__"
 
+    # Handle decimals retrieval
     try:
         decimals = token_contract.functions.decimals().call()
-    except:
-        print("bad decimals", token)
+    except Exception as e:
+        log.warning(
+            f"Error retrieving decimals for token address: {token}. Error: {str(e)}. Defaulting to -1"
+        )
         decimals = -1
 
     token_info = {
