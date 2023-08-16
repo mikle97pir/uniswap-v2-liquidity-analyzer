@@ -1,0 +1,6 @@
+data/tx_receipts.pkl
+data/blocks.pkl
+*.ipynb
+.ipynb_checkpoints
+.vscode
+.DS_Store
