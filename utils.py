@@ -33,7 +33,7 @@ from constants import DATA_PATH, DEPENDENCY_CONTRACTS_PATH, DEFAULT_PRINT_COLOR
 
 # Configuring rich logger for enhanced visual feedback in the command-line interface
 logging.basicConfig(
-    level="INFO", format="%(message)s", datefmt="[%X]", handlers=[RichHandler()]
+    level="INFO", format="%(message)s", datefmt="[%X]", handlers=[RichHandler(locals_max_string = 1)]
 )
 log = logging.getLogger("rich")
 
@@ -55,6 +55,7 @@ def connect_to_rpc_provider(rpc: str) -> Web3:
     w3 = Web3(Web3.HTTPProvider(rpc))
 
     if not w3.is_connected():
+        log.error("Unable to connect to RPC provider.")
         raise ConnectionError("Unable to connect to RPC provider.")
 
     return w3
@@ -88,7 +89,7 @@ def using_cache(data_filename: str):
                         data = pickle.load(f)
                     log.info(f"Loaded data from cache: {path}")
                 except Exception as e:
-                    log.error(f"Error loading data from cache: {e}")
+                    log.error(f"Error loading data from cache.")
                     # Fallback to get fresh data if there's an error loading from cache
                     data = get_data(*args)
             else:
@@ -100,7 +101,7 @@ def using_cache(data_filename: str):
                         pickle.dump(data, f, pickle.HIGHEST_PROTOCOL)
                     log.info(f"Saved data to cache: {path}")
                 except Exception as e:
-                    log.error(f"Error saving data to cache: {e}")
+                    log.error(f"Error saving data to cache.")
 
             return data
 
@@ -156,7 +157,7 @@ def get_pair_info(w3: Web3, ABIs: dict, pair: str) -> dict:
     - pair (str): The Ethereum address of the Uniswap V2 pair contract.
 
     Returns:
-    - dict: A dictionary containing details of the pair, specifically the 
+    - dict: A dictionary containing details of the pair, specifically the
             tokens involved and their reserves.
 
     Raises:
@@ -180,9 +181,7 @@ def get_pair_info(w3: Web3, ABIs: dict, pair: str) -> dict:
         return pair_info
 
     except Exception as e:
-        log.error(
-            f"Error retrieving pair info for pair address: {pair}. Error: {str(e)}"
-        )
+        log.error(f"Error retrieving pair info for pair address: {pair}")
         raise
 
 
@@ -199,17 +198,17 @@ def get_token_info(w3: Web3, ABIs: dict, token: str) -> dict:
     - dict: A dictionary containing the symbol and decimals of the token.
 
     Note:
-    - In cases where the token contract does not provide a symbol or decimals correctly, 
+    - In cases where the token contract does not provide a symbol or decimals correctly,
       default values of '__BAD_SYMBOL__' for symbol and -1 for decimals are returned.
     """
-    
+
     token_contract = w3.eth.contract(address=token, abi=ABIs["ERC20"])
 
     try:
         symbol = token_contract.functions.symbol().call()
     except Exception as e:
         log.warning(
-            f"Error retrieving symbol for token address: {token}. Error: {str(e)}. Defaulting to '__BAD_SYMBOL__'"
+            f"Error retrieving symbol for token address: {token}. Defaulting to '__BAD_SYMBOL__'"
         )
         symbol = "__BAD_SYMBOL__"
 
@@ -217,7 +216,7 @@ def get_token_info(w3: Web3, ABIs: dict, token: str) -> dict:
         decimals = token_contract.functions.decimals().call()
     except Exception as e:
         log.warning(
-            f"Error retrieving decimals for token address: {token}. Error: {str(e)}. Defaulting to -1"
+            f"Error retrieving decimals for token address: {token}. Defaulting to -1"
         )
         decimals = -1
 
@@ -239,9 +238,9 @@ def get_pairs_info(w3: Web3, ABIs: dict, pairs: list[str]) -> dict[str, dict]:
     - pairs (list[str]): A list of Ethereum addresses representing UniswapV2 pairs.
 
     Returns:
-    - dict[str, dict]: A dictionary where the keys are pair addresses and the values are 
+    - dict[str, dict]: A dictionary where the keys are pair addresses and the values are
       dictionaries containing information about each pair.
-      
+
     Uses:
     - The function leverages the `get_pair_info` function for each pair in the list.
     - It also uses `track` to provide a progress bar while fetching the pair information.
@@ -264,9 +263,9 @@ def get_tokens_info(w3: Web3, ABIs: dict, tokens: list[str]) -> dict[str, dict]:
     - tokens (list[str]): A list of Ethereum addresses representing ERC20 tokens.
 
     Returns:
-    - dict[str, dict]: A dictionary where the keys are token addresses and the values are 
+    - dict[str, dict]: A dictionary where the keys are token addresses and the values are
       dictionaries containing information about each token.
-      
+
     Uses:
     - The function leverages the `get_token_info` function for each token in the list.
     - It also uses `track` to provide a progress bar while fetching the token information.
@@ -284,8 +283,8 @@ def get_tokens_from_pairs(pairs_info: dict) -> set:
     Extract unique token addresses from pair information.
 
     Parameters:
-    - pairs_info (dict): A dictionary containing information about pairs. Each key 
-      is a pair address, and the associated value is another dictionary containing 
+    - pairs_info (dict): A dictionary containing information about pairs. Each key
+      is a pair address, and the associated value is another dictionary containing
       details of the pair, particularly the addresses of "token0" and "token1".
 
     Returns:
@@ -308,7 +307,7 @@ def get_recent_contracts(tx_receipts: list) -> set:
       has logs, and each log entry contains an "address" field.
 
     Returns:
-    - set: A set containing unique Ethereum contract addresses extracted from 
+    - set: A set containing unique Ethereum contract addresses extracted from
       the logs in the transaction receipts.
     """
 
@@ -323,6 +322,7 @@ def get_recent_contracts(tx_receipts: list) -> set:
     )
 
     return recent_contracts
+
 
 def print_colored(text: str, color: str = DEFAULT_PRINT_COLOR):
     """

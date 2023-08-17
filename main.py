@@ -90,7 +90,7 @@ def get_pairs(w3: Web3, ABIs: dict[str, any]) -> list[str]:
         return pairs
 
     except Exception as e:
-        log.error(f"Failed to fetch pairs from Uniswap Factory. Error: {str(e)}")
+        log.error(f"Failed to fetch pairs from Uniswap Factory.")
         raise
 
 
@@ -130,7 +130,7 @@ def get_recent_blocks(w3: Web3, nblocks: int) -> list[dict]:
         return blocks
 
     except Exception as e:
-        log.error(f"Failed to fetch recent blocks. Error: {str(e)}")
+        log.error(f"Failed to fetch recent blocks.")
         raise
 
 
@@ -171,7 +171,7 @@ def get_recent_tx_receipts(w3: Web3, nblocks: int) -> list[dict]:
         return tx_receipts
 
     except Exception as e:
-        log.error(f"Failed to fetch recent transaction receipts. Error: {str(e)}")
+        log.error(f"Failed to fetch recent transaction receipts.")
         raise
 
 
@@ -193,9 +193,6 @@ def filter_inactive_pairs(
 
     Returns:
     - list[str]: A list of active Uniswap pairs based on recent transaction activity.
-
-    Raises:
-    - Exception: If there's an issue accessing the Ethereum blockchain or filtering the pairs.
     """
 
     tx_receipts = get_recent_tx_receipts(w3, nblocks, refresh=True)
@@ -224,9 +221,6 @@ def get_active_pairs_info(w3: Web3, ABIs: dict, active_pairs: list[str]) -> dict
 
     Returns:
     - dict: A dictionary containing information about each active pair.
-
-    Raises:
-    - Exception: If there's an issue accessing the Ethereum blockchain or retrieving the pair information.
     """
 
     active_pairs_info = get_pairs_info(w3, ABIs, active_pairs)
@@ -252,9 +246,6 @@ def get_active_tokens_info(w3: Web3, ABIs: dict, active_tokens: list[str]) -> di
 
     Returns:
     - dict: A dictionary containing information about each active token.
-
-    Raises:
-    - Exception: If there's an issue accessing the Ethereum blockchain or retrieving the token information.
     """
 
     active_tokens_info = get_tokens_info(w3, ABIs, active_tokens)
@@ -287,9 +278,6 @@ def create_token_graph(
 
     Returns:
     - ig.Graph: A graph where vertices are tokens and edges represent pairs.
-
-    Raises:
-    - Exception: If there's an issue creating the graph.
     """
 
     # Initializing the graph with the number of tokens
@@ -460,7 +448,6 @@ def find_pair_TVLs(
 
     Returns:
         dict[str, tuple[str, float]]: Mapping of pair addresses to a tuple containing pair symbol and TVL.
-
     """
     TVLs = {}
     for pair in pairs:
@@ -507,125 +494,131 @@ def main(
     recent_blocks_number: int = 10000,
     n: int = typer.Option(25, "--number-of-pairs", "-n"),
 ):
-    # If the 'refresh_all' option is set, update all refresh flags
-    if refresh_all:
-        refresh_pairs = True
-        refresh_blocks = True
-        refresh_pairs_info = True
-        refresh_tokens_info = True
-
-    # Attempt to connect to the provided RPC provider
     try:
+        # If the 'refresh_all' option is set, update all refresh flags
+        if refresh_all:
+            refresh_pairs = True
+            refresh_blocks = True
+            refresh_pairs_info = True
+            refresh_tokens_info = True
+
+        # Attempt to connect to the provided RPC provider
         w3 = connect_to_rpc_provider(rpc)
-    except ConnectionError as e:
-        log.error(f"Error: {e}")
+
+        # Load Ethereum contract ABIs for later use
+        print_colored("Loading contract ABIs...")
+        ABIs = {
+            contract_name: get_abi_from_json(contract_name)
+            for contract_name in constants.DEPENDENCY_CONTRACT_NAMES
+        }
+
+        # Retrieve pairs, either from cache or directly
+        print_colored("\nRetrieving pairs...")
+        pairs = get_pairs(w3, ABIs, refresh=refresh_pairs)
+
+        # Filter to only include active pairs based on recent activity
+        print_colored("\nFiltering active pairs...")
+        active_pairs = filter_inactive_pairs(
+            w3,
+            pairs,
+            recent_blocks_number,
+            refresh=refresh_blocks,
+        )
+
+        # Gather detailed information about the active pairs
+        print_colored("\nGathering info about active pairs...")
+        active_pairs_info = get_active_pairs_info(
+            w3, ABIs, active_pairs, refresh=refresh_pairs_info
+        )
+
+        # Extract tokens involved in the active pairs
+        print_colored("\nExtracting active tokens from pairs...")
+        active_tokens = get_tokens_from_pairs(active_pairs_info)
+
+        # Gather detailed information about the active tokens
+        print_colored("\nGathering info about active tokens...")
+        active_tokens_info = get_active_tokens_info(
+            w3, ABIs, active_tokens, refresh=refresh_tokens_info
+        )
+
+        # Map tokens to vertices (and vice versa) for graph representation
+        vertex_to_token = list(active_tokens)
+        token_to_vertex = {vertex_to_token[i]: i for i in range(len(vertex_to_token))}
+
+        # Construct a graph representing token relationships and liquidity
+        print_colored("\nCreating token graph...")
+        token_graph = create_token_graph(
+            vertex_to_token, token_to_vertex, active_pairs, active_pairs_info
+        )
+
+        # Identify connected components in the token graph
+        print_colored("\nFinding main component in the graph...")
+        components = token_graph.connected_components(mode="weak")
+        main_component = components[0]
+
+        # Find shortest paths in the token graph to the main component from USDC
+        print_colored("\nCalculating shortest paths...")
+        paths_edges = token_graph.get_shortest_paths(
+            token_to_vertex[constants.USDC], to=main_component, mode="all", output="epath"
+        )
+
+        paths_vertices = token_graph.get_shortest_paths(
+            token_to_vertex[constants.USDC], to=main_component, mode="all", output="vpath"
+        )
+
+        # Calculate token prices based on the found paths
+        print_colored("\nCalculating token prices...")
+        token_prices = find_token_prices(
+            paths_edges,
+            paths_vertices,
+            active_pairs,
+            vertex_to_token,
+            active_pairs_info,
+            active_tokens_info,
+        )
+
+        # Calculate Total Value Locked (TVL) for each active pair
+        print_colored("\nCalculating Total Value Locked (TVL) for pairs...")
+        TVLs = find_pair_TVLs(
+            active_pairs,
+            token_prices,
+            token_to_vertex,
+            main_component,
+            active_pairs_info,
+            active_tokens_info,
+        )
+
+        # Sort and display the top pairs based on their TVL
+        TVLs_list = list(TVLs.items())
+        TVLs_list.sort(key=lambda x: x[1][1], reverse=True)
+        print_colored("\nDisplaying top pairs based on TVL:")
+
+        # Create and populate a table for visualization
+        table = Table(show_header=True, header_style="bold magenta")
+        table.add_column("Rank", style="dim", width=5)
+        table.add_column("Pair", style="bold", width=20)
+        table.add_column("TVL (USDC)", style="bold", justify="right", width=20)
+        table.add_column("Address", style="dim", width=42)
+
+        for i, (pair, (symbol_pair, value)) in enumerate(TVLs_list[:n], 1):
+            formatted_value = f"{value:,.2f} USDC"
+            table.add_row(str(i), symbol_pair, formatted_value, pair)
+
+        print(table)
+
+        # Final message to indicate successful execution
+        print_colored(
+            f"\nSuccessfully retrieved and displayed the top {n} pairs based on TVL!"
+        )
+    except Exception as e:
+        # Log the error message
+        log.error(f"An error occurred: {str(e)[:1024]}")
+        
+        # Print the error message for the user
+        print_colored("An unexpected error occurred. Please check the logs for more details.", "red")
+        
+        # Exit the program with error code 1
         sys.exit(1)
-
-    # Load Ethereum contract ABIs for later use
-    print_colored("Loading contract ABIs...")
-    ABIs = {
-        contract_name: get_abi_from_json(contract_name)
-        for contract_name in constants.DEPENDENCY_CONTRACT_NAMES
-    }
-
-    # Retrieve pairs, either from cache or directly
-    print_colored("\nRetrieving pairs...")
-    pairs = get_pairs(w3, ABIs, refresh=refresh_pairs)
-
-    # Filter to only include active pairs based on recent activity
-    print_colored("\nFiltering active pairs...")
-    active_pairs = filter_inactive_pairs(
-        w3,
-        pairs,
-        recent_blocks_number,
-        refresh=refresh_blocks,
-    )
-
-    # Gather detailed information about the active pairs
-    print_colored("\nGathering info about active pairs...")
-    active_pairs_info = get_active_pairs_info(
-        w3, ABIs, active_pairs, refresh=refresh_pairs_info
-    )
-
-    # Extract tokens involved in the active pairs
-    print_colored("\nExtracting active tokens from pairs...")
-    active_tokens = get_tokens_from_pairs(active_pairs_info)
-
-    # Gather detailed information about the active tokens
-    print_colored("\nGathering info about active tokens...")
-    active_tokens_info = get_active_tokens_info(
-        w3, ABIs, active_tokens, refresh=refresh_tokens_info
-    )
-
-    # Map tokens to vertices (and vice versa) for graph representation
-    vertex_to_token = list(active_tokens)
-    token_to_vertex = {vertex_to_token[i]: i for i in range(len(vertex_to_token))}
-
-    # Construct a graph representing token relationships and liquidity
-    print_colored("\nCreating token graph...")
-    token_graph = create_token_graph(
-        vertex_to_token, token_to_vertex, active_pairs, active_pairs_info
-    )
-
-    # Identify connected components in the token graph
-    print_colored("\nFinding main component in the graph...")
-    components = token_graph.connected_components(mode="weak")
-    main_component = components[0]
-
-    # Find shortest paths in the token graph to the main component from USDC
-    print_colored("\nCalculating shortest paths...")
-    paths_edges = token_graph.get_shortest_paths(
-        token_to_vertex[constants.USDC], to=main_component, mode="all", output="epath"
-    )
-
-    paths_vertices = token_graph.get_shortest_paths(
-        token_to_vertex[constants.USDC], to=main_component, mode="all", output="vpath"
-    )
-
-    # Calculate token prices based on the found paths
-    print_colored("\nCalculating token prices...")
-    token_prices = find_token_prices(
-        paths_edges,
-        paths_vertices,
-        active_pairs,
-        vertex_to_token,
-        active_pairs_info,
-        active_tokens_info,
-    )
-
-    # Calculate Total Value Locked (TVL) for each active pair
-    print_colored("\nCalculating Total Value Locked (TVL) for pairs...")
-    TVLs = find_pair_TVLs(
-        active_pairs,
-        token_prices,
-        token_to_vertex,
-        main_component,
-        active_pairs_info,
-        active_tokens_info,
-    )
-
-    # Sort and display the top pairs based on their TVL
-    TVLs_list = list(TVLs.items())
-    TVLs_list.sort(key=lambda x: x[1][1], reverse=True)
-    print_colored("\nDisplaying top pairs based on TVL:")
-
-    # Create and populate a table for visualization
-    table = Table(show_header=True, header_style="bold magenta")
-    table.add_column("Rank", style="dim", width=5)
-    table.add_column("Pair", style="bold", width=20)
-    table.add_column("TVL (USDC)", style="bold", justify="right", width=20)
-    table.add_column("Address", style="dim", width=42)
-
-    for i, (pair, (symbol_pair, value)) in enumerate(TVLs_list[:n], 1):
-        formatted_value = f"{value:,.2f} USDC"
-        table.add_row(str(i), symbol_pair, formatted_value, pair)
-
-    print(table)
-
-    # Final message to indicate successful execution
-    print_colored(
-        f"\nSuccessfully retrieved and displayed the top {n} pairs based on TVL!"
-    )
 
 
 if __name__ == "__main__":
