@@ -268,6 +268,9 @@ def get_tokens_info(w3, ABIs, tokens):
 @using_cache("active_pairs_info")
 def get_active_pairs_info(w3, ABIs, active_pairs):
     active_pairs_info = get_pairs_info(w3, ABIs, active_pairs)
+    log.success(
+        f"Successfully retrieved information for {len(active_pairs_info)} active pairs."
+    )
     return active_pairs_info
 
 
@@ -275,14 +278,21 @@ def get_active_pairs_info(w3, ABIs, active_pairs):
 def get_active_tokens_info(w3, ABIs, active_tokens):
     active_tokens_info = get_tokens_info(w3, ABIs, active_tokens)
 
-    active_tokens_info["0x9f8F72aA9304c8B593d555F12eF6589cC3A579A2"]["symbol"] = "MKR"
-    active_tokens_info["0x0Ba45A8b5d5575935B8158a88C631E9F9C95a2e5"]["symbol"] = "TRB"
-    active_tokens_info["0x0Ba45A8b5d5575935B8158a88C631E9F9C95a2e5"]["decimals"] = 18
-    active_tokens_info["0x9469D013805bFfB7D3DEBe5E7839237e535ec483"]["symbol"] = "RING"
-    active_tokens_info["0x9F284E1337A815fe77D2Ff4aE46544645B20c5ff"]["symbol"] = "KTON"
-    active_tokens_info["0x431ad2ff6a9C365805eBaD47Ee021148d6f7DBe0"]["symbol"] = "DF"
-    active_tokens_info["0x89d24A6b4CcB1B6fAA2625fE562bDD9a23260359"]["symbol"] = "SAI"
+    overrides = {
+        "0x9f8F72aA9304c8B593d555F12eF6589cC3A579A2": {"symbol": "MKR"},
+        "0x0Ba45A8b5d5575935B8158a88C631E9F9C95a2e5": {"symbol": "TRB", "decimals": 18},
+        "0x9469D013805bFfB7D3DEBe5E7839237e535ec483": {"symbol": "RING"},
+        "0x9F284E1337A815fe77D2Ff4aE46544645B20c5ff": {"symbol": "KTON"},
+        "0x431ad2ff6a9C365805eBaD47Ee021148d6f7DBe0": {"symbol": "DF"},
+        "0x89d24A6b4CcB1B6fAA2625fE562bDD9a23260359": {"symbol": "SAI"},
+    }
 
+    for address, details in overrides.items():
+        active_tokens_info[address].update(details)
+
+    log.success(
+        f"Successfully retrieved and modified information for {len(active_tokens_info)} active tokens."
+    )
     return active_tokens_info
 
 
