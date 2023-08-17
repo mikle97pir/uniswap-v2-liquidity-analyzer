@@ -324,6 +324,7 @@ def find_token_price_by_path(
 ):
     price = 1
     token = vertex_to_token[path_vertices[-1]]
+    target_symbol = tokens_info[token]["symbol"]
 
     for i, edge in enumerate(path_edges):
         pair_address = pairs[edge]
@@ -350,14 +351,19 @@ def find_token_price_by_path(
         if end_reserves == 0:
             if start_reserves == 0:
                 log.warning(
-                    "Both reserves are zero for pair: {} ({}-{} / {}-{})".format(
-                        pair_address, start_token, end_token, start_symbol, end_symbol
+                    "Both reserves are zero for pair: {} ({}-{} / {}-{}). Setting price for token '{}' to zero.".format(
+                        pair_address,
+                        start_token,
+                        end_token,
+                        start_symbol,
+                        end_symbol,
+                        target_symbol,
                     )
                 )
                 return token, 0
             else:
                 log.warning(
-                    "End reserve ({} / {}) is zero for pair: {} ({}-{} / {}-{})".format(
+                    "End reserve ({} / {}) is zero for pair: {} ({}-{} / {}-{}). Setting price for token '{}' to zero.".format(
                         end_token,
                         end_symbol,
                         pair_address,
@@ -365,6 +371,7 @@ def find_token_price_by_path(
                         end_token,
                         start_symbol,
                         end_symbol,
+                        target_symbol,
                     )
                 )
                 return token, 0
@@ -395,6 +402,8 @@ def find_token_prices(
             tokens_info,
         )
         token_prices[token] = price
+
+    log.info("Successfully found prices for {} tokens.".format(len(token_prices)))
     return token_prices
 
 
@@ -410,6 +419,7 @@ def find_pair_TVLs(
     for pair in pairs:
         pair_info = pairs_info[pair]
         token0, token1 = pair_info["token0"], pair_info["token1"]
+
         if token_to_vertex[token0] in main_component:
             reserve0, reserve1 = pair_info["reserves"][:2]
             price0, price1 = token_prices[token0], token_prices[token1]
@@ -419,12 +429,22 @@ def find_pair_TVLs(
             )
             symbol0, symbol1 = token0_info["symbol"], token1_info["symbol"]
             decimals0, decimals1 = token0_info["decimals"], token1_info["decimals"]
-            TVL = price0 * reserve0 * 10 ** (-decimals0) + price1 * reserve1 * 10 ** (
-                -decimals1
+
+            TVL = (price0 * reserve0 * 10 ** (-decimals0)) + (
+                price1 * reserve1 * 10 ** (-decimals1)
             )
-            if math.isnan(TVL):
+
+            # Check for NaN and infinity values
+            if math.isnan(TVL) or TVL == math.inf:
+                previous_value = TVL  # to indicate whether it was NaN or infinity
                 TVL = 0
+                log.warning(
+                    f"Calculated TVL for pair {pair} ({symbol0}-{symbol1}) resulted in {previous_value}. Replaced with 0."
+                )
+
             TVLs[pair] = f"{symbol0}-{symbol1}", TVL
+
+    log.info("Successfully calculated TVL for {} pairs.".format(len(TVLs)))
     return TVLs
 
 
