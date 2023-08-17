@@ -312,27 +312,33 @@ def main(
     recent_blocks_number: int = 10000,
     n: int = typer.Option(25, "--number-of-pairs", "-n"),
 ):
+
+    # If the 'refresh_all' option is set, update all refresh flags
     if refresh_all:
         refresh_pairs = True
         refresh_blocks = True
         refresh_pairs_info = True
         refresh_tokens_info = True
 
+    # Attempt to connect to the provided RPC provider
     try:
         w3 = connect_to_rpc_provider(rpc)
     except ConnectionError as e:
         log.error(f"Error: {e}")
         sys.exit(1)
 
+    # Load Ethereum contract ABIs for later use
     print_colored("Loading contract ABIs...")
     ABIs = {
         contract_name: get_abi_from_json(contract_name)
         for contract_name in constants.DEPENDENCY_CONTRACT_NAMES
     }
 
+    # Retrieve pairs, either from cache or directly
     print_colored("\nRetrieving pairs...")
     pairs = get_pairs(w3, ABIs, refresh=refresh_pairs)
 
+    # Filter to only include active pairs based on recent activity
     print_colored("\nFiltering active pairs...")
     active_pairs = filter_inactive_pairs(
         w3,
@@ -341,32 +347,39 @@ def main(
         refresh=refresh_blocks,
     )
 
+    # Gather detailed information about the active pairs
     print_colored("\nGathering info about active pairs...")
     active_pairs_info = get_active_pairs_info(
         w3, ABIs, active_pairs, refresh=refresh_pairs_info
     )
 
+    # Extract tokens involved in the active pairs
     print_colored("\nExtracting active tokens from pairs...")
     active_tokens = get_tokens_from_pairs(active_pairs_info)
 
+    # Gather detailed information about the active tokens
     print_colored("\nGathering info about active tokens...")
     active_tokens_info = get_active_tokens_info(
         w3, ABIs, active_tokens, refresh=refresh_tokens_info
     )
 
+    # Map tokens to vertices (and vice versa) for graph representation
     vertex_to_token = list(active_tokens)
     token_to_vertex = {vertex_to_token[i]: i for i in range(len(vertex_to_token))}
 
+    # Construct a graph representing token relationships and liquidity
     print_colored("\nCreating token graph...")
     token_graph = create_token_graph(
         vertex_to_token, token_to_vertex, active_pairs, active_pairs_info
     )
 
+    # Identify connected components in the token graph
     print_colored("\nFinding main component in the graph...")
     components = token_graph.connected_components(mode="weak")
     main_component = components[0]
 
-    print_colored("\nCalculating shortest paths and token prices...")
+    # Find shortest paths in the token graph to the main component from USDC
+    print_colored("\nCalculating shortest paths...")
     paths_edges = token_graph.get_shortest_paths(
         token_to_vertex[constants.USDC], to=main_component, mode="all", output="epath"
     )
@@ -375,6 +388,8 @@ def main(
         token_to_vertex[constants.USDC], to=main_component, mode="all", output="vpath"
     )
 
+    # Calculate token prices based on the found paths
+    print_colored("\nCalculating token prices...")
     token_prices = find_token_prices(
         paths_edges,
         paths_vertices,
@@ -384,6 +399,7 @@ def main(
         active_tokens_info,
     )
 
+    # Calculate Total Value Locked (TVL) for each active pair
     print_colored("\nCalculating Total Value Locked (TVL) for pairs...")
     TVLs = find_pair_TVLs(
         active_pairs,
@@ -394,10 +410,12 @@ def main(
         active_tokens_info,
     )
 
+    # Sort and display the top pairs based on their TVL
     TVLs_list = list(TVLs.items())
     TVLs_list.sort(key=lambda x: x[1][1], reverse=True)
-
     print_colored("\nDisplaying top pairs based on TVL:")
+    
+    # Create and populate a table for visualization
     table = Table(show_header=True, header_style="bold magenta")
     table.add_column("Rank", style="dim", width=5)
     table.add_column("Pair", style="bold", width=20)
@@ -410,6 +428,7 @@ def main(
 
     print(table)
 
+    # Final message to indicate successful execution
     print_colored(
         f"\nSuccessfully retrieved and displayed the top {n} pairs based on TVL!"
     )
