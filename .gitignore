@@ -4,3 +4,4 @@ data/blocks.pkl
 .ipynb_checkpoints
 .vscode
 .DS_Store
+__pycache__

@@ -1,7 +1,6 @@
 # --- Imports ---
 
 # Standard library imports for JSON handling and file path manipulation
-import json
 from pathlib import Path
 
 # Web3 library for Ethereum blockchain interaction
@@ -9,12 +8,10 @@ from web3 import Web3
 
 # Rich library for enhanced command-line printing, progress tracking, and logging
 from rich.progress import track
-from rich.logging import RichHandler
 from rich import print
 from rich.table import Table
 
 # Python's built-in serialization and logging libraries
-import pickle
 import logging
 
 # Mathematical operations and constants
@@ -27,84 +24,24 @@ import igraph as ig
 import typer
 from typing_extensions import Annotated
 
-# --- Logging Configuration ---
 
-# Configuring rich logger for enhanced visual feedback in the command-line interface
-logging.basicConfig(
-    level="INFO", format="%(message)s", datefmt="[%X]", handlers=[RichHandler()]
+import constants
+from utils import (
+    log,
+    using_cache,
+    get_abi_from_json,
+    get_pairs_info,
+    get_tokens_info,
+    get_tokens_from_pairs,
+    get_recent_contracts,
 )
-log = logging.getLogger("rich")
-
-# --- Constants ---
-
-# Names of Ethereum contracts which this script is dependent upon
-DEPENDENCY_CONTRACT_NAMES = ["ERC20", "UniswapV2Factory", "UniswapV2Pair"]
-
-# Path where the contract ABIs (Application Binary Interfaces) are stored
-DEPENDENCY_CONTRACTS_PATH = "abi"
-
-# Path where persistent data like caches might be stored
-DATA_PATH = "data"
-
-# Address of the Uniswap V2 Factory contract on the Ethereum network
-UNISWAP_FACTORY = "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f"
-
-# Address of the USDC (USD Coin) token on the Ethereum network
-USDC = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
-
-
-def using_cache(data_filename: str):
-    path = (Path(DATA_PATH) / data_filename).with_suffix(".pkl")
-
-    def using_cache_with_path(get_data):
-        def get_data_with_cache(*args, refresh=False):
-            if path.is_file() and not refresh:
-                try:
-                    with path.open("rb") as f:
-                        data = pickle.load(f)
-                    log.info(f"Loaded data from cache: {path}")
-                except Exception as e:
-                    log.error(f"Error loading data from cache: {e}")
-                    data = get_data(*args)  # Fallback to get fresh data
-            else:
-                data = get_data(*args)
-                try:
-                    with path.open("wb") as f:
-                        pickle.dump(data, f, pickle.HIGHEST_PROTOCOL)
-                    log.info(f"Saved data to cache: {path}")
-                except Exception as e:
-                    log.error(f"Error saving data to cache: {e}")
-
-            return data
-
-        return get_data_with_cache
-
-    return using_cache_with_path
-
-
-def get_abi_from_json(contract_name: str) -> dict:
-    abi_path = (Path(DEPENDENCY_CONTRACTS_PATH) / contract_name).with_suffix(".json")
-
-    try:
-        with abi_path.open("r") as f:
-            abi = json.load(f)
-            log.info(f"Successfully loaded ABI for contract: {contract_name}")
-            return abi
-    except FileNotFoundError:
-        log.error(
-            f"Could not find ABI file for contract: {contract_name} at path: {abi_path}"
-        )
-        raise
-    except json.JSONDecodeError:
-        log.error(f"Error decoding JSON for contract: {contract_name}")
-        raise
 
 
 @using_cache("pairs")
 def get_pairs(w3, ABIs):
     try:
         uniswap_factory_contract = w3.eth.contract(
-            address=UNISWAP_FACTORY, abi=ABIs["UniswapV2Factory"]
+            address=constants.UNISWAP_FACTORY, abi=ABIs["UniswapV2Factory"]
         )
 
         all_pairs_length = uniswap_factory_contract.functions.allPairsLength().call()
@@ -171,20 +108,6 @@ def get_recent_tx_receipts(w3, nblocks):
         raise
 
 
-def get_recent_contracts(tx_receipts):
-    recent_contracts = set()
-
-    for receipt in tx_receipts:
-        for log in receipt.logs:
-            recent_contracts.add(log["address"])
-
-    log.info(
-        f"Successfully extracted {len(recent_contracts)} unique contract addresses from transaction receipts."
-    )
-
-    return recent_contracts
-
-
 @using_cache("active_pairs")
 def filter_inactive_pairs(w3, uniswap_pairs, nblocks):
     tx_receipts = get_recent_tx_receipts(w3, nblocks, refresh=True)
@@ -196,73 +119,6 @@ def filter_inactive_pairs(w3, uniswap_pairs, nblocks):
     )
 
     return active_pairs
-
-
-def get_pair_info(w3, ABIs, pair):
-    try:
-        pair_contract = w3.eth.contract(address=pair, abi=ABIs["UniswapV2Pair"])
-        token0 = pair_contract.functions.token0().call()
-        token1 = pair_contract.functions.token1().call()
-        reserves = pair_contract.functions.getReserves().call()
-
-        pair_info = {
-            "token0": token0,
-            "token1": token1,
-            "reserves": reserves,
-        }
-
-        return pair_info
-
-    except Exception as e:
-        log.error(
-            f"Error retrieving pair info for pair address: {pair}. Error: {str(e)}"
-        )
-        raise
-
-
-def get_token_info(w3, ABIs, token):
-    token_contract = w3.eth.contract(address=token, abi=ABIs["ERC20"])
-
-    # Handle symbol retrieval
-    try:
-        symbol = token_contract.functions.symbol().call()
-    except Exception as e:
-        log.warning(
-            f"Error retrieving symbol for token address: {token}. Error: {str(e)}. Defaulting to '__BAD_SYMBOL__'"
-        )
-        symbol = "__BAD_SYMBOL__"
-
-    # Handle decimals retrieval
-    try:
-        decimals = token_contract.functions.decimals().call()
-    except Exception as e:
-        log.warning(
-            f"Error retrieving decimals for token address: {token}. Error: {str(e)}. Defaulting to -1"
-        )
-        decimals = -1
-
-    token_info = {
-        "symbol": symbol,
-        "decimals": decimals,
-    }
-
-    return token_info
-
-
-def get_pairs_info(w3, ABIs, pairs):
-    pairs_info = {
-        pair: get_pair_info(w3, ABIs, pair)
-        for pair in track(pairs, description="Fetching information about pairs")
-    }
-    return pairs_info
-
-
-def get_tokens_info(w3, ABIs, tokens):
-    tokens_info = {
-        token: get_token_info(w3, ABIs, token)
-        for token in track(tokens, description="Fetching information about tokens")
-    }
-    return tokens_info
 
 
 @using_cache("active_pairs_info")
@@ -278,30 +134,13 @@ def get_active_pairs_info(w3, ABIs, active_pairs):
 def get_active_tokens_info(w3, ABIs, active_tokens):
     active_tokens_info = get_tokens_info(w3, ABIs, active_tokens)
 
-    overrides = {
-        "0x9f8F72aA9304c8B593d555F12eF6589cC3A579A2": {"symbol": "MKR"},
-        "0x0Ba45A8b5d5575935B8158a88C631E9F9C95a2e5": {"symbol": "TRB", "decimals": 18},
-        "0x9469D013805bFfB7D3DEBe5E7839237e535ec483": {"symbol": "RING"},
-        "0x9F284E1337A815fe77D2Ff4aE46544645B20c5ff": {"symbol": "KTON"},
-        "0x431ad2ff6a9C365805eBaD47Ee021148d6f7DBe0": {"symbol": "DF"},
-        "0x89d24A6b4CcB1B6fAA2625fE562bDD9a23260359": {"symbol": "SAI"},
-    }
-
-    for address, details in overrides.items():
+    for address, details in constants.TOKEN_OVERRIDES.items():
         active_tokens_info[address].update(details)
 
     log.info(
         f"Successfully retrieved and modified information for {len(active_tokens_info)} active tokens."
     )
     return active_tokens_info
-
-
-def get_tokens_from_pairs(pairs_info):
-    tokens = set()
-    for pair in pairs_info:
-        tokens.add(pairs_info[pair]["token0"])
-        tokens.add(pairs_info[pair]["token1"])
-    return tokens
 
 
 def create_token_graph(vertex_to_token, token_to_vertex, pairs, pairs_info):
@@ -462,7 +301,7 @@ def main(
     print("[cornsilk1]Loading contract ABIs...[/cornsilk1]")
     ABIs = {
         contract_name: get_abi_from_json(contract_name)
-        for contract_name in DEPENDENCY_CONTRACT_NAMES
+        for contract_name in constants.DEPENDENCY_CONTRACT_NAMES
     }
 
     print("\n[cornsilk1]Retrieving pairs...[/cornsilk1]")
@@ -503,11 +342,11 @@ def main(
 
     print("\n[cornsilk1]Calculating shortest paths and token prices...[/cornsilk1]")
     paths_edges = token_graph.get_shortest_paths(
-        token_to_vertex[USDC], to=main_component, mode="all", output="epath"
+        token_to_vertex[constants.USDC], to=main_component, mode="all", output="epath"
     )
 
     paths_vertices = token_graph.get_shortest_paths(
-        token_to_vertex[USDC], to=main_component, mode="all", output="vpath"
+        token_to_vertex[constants.USDC], to=main_component, mode="all", output="vpath"
     )
 
     token_prices = find_token_prices(
@@ -545,7 +384,9 @@ def main(
 
     print(table)
 
-    print(f"\n[cornsilk1]Successfully retrieved and displayed the top {n} pairs based on TVL![/cornsilk1]")
+    print(
+        f"\n[cornsilk1]Successfully retrieved and displayed the top {n} pairs based on TVL![/cornsilk1]"
+    )
 
 
 if __name__ == "__main__":
