@@ -546,5 +546,6 @@ def main(
 
     log.info(f"Successfully retrieved and displayed the top {n} pairs based on TVL!")
 
+
 if __name__ == "__main__":
     typer.run(main)
