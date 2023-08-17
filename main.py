@@ -53,7 +53,24 @@ from utils import (
 
 
 @using_cache("pairs")
-def get_pairs(w3, ABIs):
+def get_pairs(w3: Web3, ABIs: dict[str, any]) -> list[str]:
+    """
+    Retrieve all the pair addresses from the Uniswap Factory.
+
+    This function attempts to get all the pair addresses from the Uniswap V2 Factory contract.
+    The result can be cached, and can be retrieved from cache if it exists and if the refresh flag isn't set.
+
+    Parameters:
+    - w3 (Web3): The Web3 instance used for Ethereum blockchain interactions.
+    - ABIs (dict): Dictionary containing the Application Binary Interfaces (ABIs) for the necessary Ethereum contracts.
+
+    Returns:
+    - list[str]: A list of Ethereum addresses representing the pairs from the Uniswap Factory.
+
+    Raises:
+    - Exception: If there's an issue accessing the Uniswap Factory contract or fetching the pairs.
+    """
+
     try:
         uniswap_factory_contract = w3.eth.contract(
             address=constants.UNISWAP_FACTORY, abi=ABIs["UniswapV2Factory"]
@@ -78,7 +95,24 @@ def get_pairs(w3, ABIs):
 
 
 @using_cache("blocks")
-def get_recent_blocks(w3, nblocks):
+def get_recent_blocks(w3: Web3, nblocks: int) -> list[dict]:
+    """
+    Retrieve the most recent blocks from the Ethereum blockchain.
+
+    This function fetches the specified number of recent blocks from the Ethereum blockchain.
+    The result can be cached, and can be retrieved from cache if it exists and if the refresh flag isn't set.
+
+    Parameters:
+    - w3 (Web3): The Web3 instance used for Ethereum blockchain interactions.
+    - nblocks (int): The number of most recent blocks to retrieve.
+
+    Returns:
+    - list[dict]: A list of block details in dictionary format.
+
+    Raises:
+    - Exception: If there's an issue accessing the Ethereum blockchain or fetching the blocks.
+    """
+
     try:
         blocks = [
             w3.eth.get_block(block_number)
@@ -101,7 +135,25 @@ def get_recent_blocks(w3, nblocks):
 
 
 @using_cache("tx_receipts")
-def get_recent_tx_receipts(w3, nblocks):
+def get_recent_tx_receipts(w3: Web3, nblocks: int) -> list[dict]:
+    """
+    Retrieve the transaction receipts of the most recent transactions from the Ethereum blockchain.
+
+    This function fetches the transaction receipts of the transactions that are part of the most recent blocks in
+    the Ethereum blockchain. The result can be cached, and can be retrieved from cache if it exists
+    and if the refresh flag isn't set.
+
+    Parameters:
+    - w3 (Web3): The Web3 instance used for Ethereum blockchain interactions.
+    - nblocks (int): The number of most recent blocks to consider.
+
+    Returns:
+    - list[dict]: A list of transaction receipts in dictionary format.
+
+    Raises:
+    - Exception: If there's an issue accessing the Ethereum blockchain or fetching the transaction receipts.
+    """
+
     try:
         blocks = get_recent_blocks(w3, nblocks, refresh=True)
         tx_hashes = [tx_hash for block in blocks for tx_hash in block.transactions]
@@ -124,7 +176,28 @@ def get_recent_tx_receipts(w3, nblocks):
 
 
 @using_cache("active_pairs")
-def filter_inactive_pairs(w3, uniswap_pairs, nblocks):
+def filter_inactive_pairs(
+    w3: Web3, uniswap_pairs: list[str], nblocks: int
+) -> list[str]:
+    """
+    Filter out inactive pairs from the provided Uniswap pairs based on recent transaction activity.
+
+    This function checks which of the provided Uniswap pairs have been involved in transactions in the
+    most recent blocks and returns those pairs. The result can be cached and can be retrieved from cache if it exists
+    and if the refresh flag isn't set.
+
+    Parameters:
+    - w3 (Web3): The Web3 instance used for Ethereum blockchain interactions.
+    - uniswap_pairs (list[str]): The list of Uniswap pairs to be filtered.
+    - nblocks (int): The number of most recent blocks to consider.
+
+    Returns:
+    - list[str]: A list of active Uniswap pairs based on recent transaction activity.
+
+    Raises:
+    - Exception: If there's an issue accessing the Ethereum blockchain or filtering the pairs.
+    """
+
     tx_receipts = get_recent_tx_receipts(w3, nblocks, refresh=True)
     recent_contracts = get_recent_contracts(tx_receipts)
     active_pairs = [pair for pair in uniswap_pairs if pair in recent_contracts]
@@ -137,7 +210,25 @@ def filter_inactive_pairs(w3, uniswap_pairs, nblocks):
 
 
 @using_cache("active_pairs_info")
-def get_active_pairs_info(w3, ABIs, active_pairs):
+def get_active_pairs_info(w3: Web3, ABIs: dict, active_pairs: list[str]) -> dict:
+    """
+    Retrieve detailed information for the given active pairs.
+
+    This function uses the `get_pairs_info` function to fetch details about each active pair.
+    The result can be cached and can be retrieved from cache if it exists and if the refresh flag isn't set.
+
+    Parameters:
+    - w3 (Web3): The Web3 instance used for Ethereum blockchain interactions.
+    - ABIs (dict): Dictionary containing ABIs needed for Ethereum contract interactions.
+    - active_pairs (list[str]): List of active Uniswap pairs for which information is to be retrieved.
+
+    Returns:
+    - dict: A dictionary containing information about each active pair.
+
+    Raises:
+    - Exception: If there's an issue accessing the Ethereum blockchain or retrieving the pair information.
+    """
+
     active_pairs_info = get_pairs_info(w3, ABIs, active_pairs)
     log.info(
         f"Successfully retrieved information for {len(active_pairs_info)} active pairs."
@@ -146,9 +237,29 @@ def get_active_pairs_info(w3, ABIs, active_pairs):
 
 
 @using_cache("active_tokens_info")
-def get_active_tokens_info(w3, ABIs, active_tokens):
+def get_active_tokens_info(w3: Web3, ABIs: dict, active_tokens: list[str]) -> dict:
+    """
+    Retrieve detailed information for the given active tokens and update based on constants.
+
+    This function uses the `get_tokens_info` function to fetch details about each active token.
+    The result can be cached and can be retrieved from cache if it exists and if the refresh flag isn't set.
+    It also updates the token information with any overrides specified in the constants.
+
+    Parameters:
+    - w3 (Web3): The Web3 instance used for Ethereum blockchain interactions.
+    - ABIs (dict): Dictionary containing ABIs needed for Ethereum contract interactions.
+    - active_tokens (list[str]): List of active tokens for which information is to be retrieved.
+
+    Returns:
+    - dict: A dictionary containing information about each active token.
+
+    Raises:
+    - Exception: If there's an issue accessing the Ethereum blockchain or retrieving the token information.
+    """
+
     active_tokens_info = get_tokens_info(w3, ABIs, active_tokens)
 
+    # Update token info with overrides from constants, if they exist
     for address, details in constants.TOKEN_OVERRIDES.items():
         active_tokens_info[address].update(details)
 
@@ -158,13 +269,39 @@ def get_active_tokens_info(w3, ABIs, active_tokens):
     return active_tokens_info
 
 
-def create_token_graph(vertex_to_token, token_to_vertex, pairs, pairs_info):
+def create_token_graph(
+    vertex_to_token: list[str],
+    token_to_vertex: dict[str, int],
+    pairs: list[str],
+    pairs_info: dict[str, dict],
+) -> ig.Graph:
+    """
+    Creates a graph representation of token pairs where each vertex represents a token and
+    each edge represents a token pair.
+
+    Parameters:
+    - vertex_to_token (list[str]): A list where indices represent vertex IDs and values are their corresponding token addresses.
+    - token_to_vertex (dict[str, int]): A mapping from token addresses to their corresponding vertex IDs.
+    - pairs (list[str]): A list of token pairs.
+    - pairs_info (dict[str, dict]): Detailed information about each pair.
+
+    Returns:
+    - ig.Graph: A graph where vertices are tokens and edges represent pairs.
+
+    Raises:
+    - Exception: If there's an issue creating the graph.
+    """
+
+    # Initializing the graph with the number of tokens
     token_graph = ig.Graph(n=len(vertex_to_token))
+
+    # Loop through pairs to populate the graph with edges based on the pairs info
     for pair in pairs:
         info = pairs_info[pair]
         vertice0 = token_to_vertex[info["token0"]]
         vertice1 = token_to_vertex[info["token1"]]
         token_graph.add_edges([(vertice0, vertice1)])
+
     log.info(
         "Token graph successfully created with {0} vertices and {1} edges.".format(
             token_graph.vcount(), token_graph.ecount()
@@ -174,8 +311,32 @@ def create_token_graph(vertex_to_token, token_to_vertex, pairs, pairs_info):
 
 
 def find_token_price_by_path(
-    path_edges, path_vertices, pairs, vertex_to_token, pairs_info, tokens_info
-):
+    path_edges: list[int],
+    path_vertices: list[int],
+    pairs: list[str],
+    vertex_to_token: list[str],
+    pairs_info: dict[str, dict],
+    tokens_info: dict[str, dict],
+) -> tuple[str, float]:
+    """
+    Calculates the token price along a given path in the token graph.
+
+    Parameters:
+    - path_edges (list[int]): List of edge indices along the path.
+    - path_vertices (list[int]): List of vertex indices along the path.
+    - pairs (list[str]): List of token pair addresses.
+    - vertex_to_token (list[str]): List where indices represent vertex IDs and values are token addresses.
+    - pairs_info (dict[str, dict]): Detailed information about each pair.
+    - tokens_info (dict[str, dict]): Detailed information about each token.
+
+    Returns:
+    - tuple[str, float]: A tuple containing the token symbol and its calculated price.
+
+    Warnings:
+    - If both reserves are zero for a pair, the price for the token will be set to zero.
+    - If the end reserve is zero for a pair, the price for the token will be set to zero.
+    """
+
     price = 1
     token = vertex_to_token[path_vertices[-1]]
     target_symbol = tokens_info[token]["symbol"]
@@ -197,6 +358,7 @@ def find_token_price_by_path(
 
         pair_info = pairs_info[pair_address]
 
+        # Determine which token's reserves correspond to the start and end of the pair
         if (start_token, end_token) == (pair_info["token0"], pair_info["token1"]):
             start_reserves, end_reserves = pair_info["reserves"][:2]
         else:
@@ -230,20 +392,36 @@ def find_token_price_by_path(
                 )
                 return token, 0
 
+        # Calculate the price based on reserves and decimals
         price *= (start_reserves / end_reserves) * 10 ** (end_decimals - start_decimals)
 
     return token, price
 
 
 def find_token_prices(
-    paths_edges,
-    paths_vertices,
-    pairs,
-    vertex_to_token,
-    pairs_info,
-    tokens_info,
-):
+    paths_edges: list[list[int]],
+    paths_vertices: list[list[int]],
+    pairs: list[str],
+    vertex_to_token: list[str],
+    pairs_info: dict[str, dict],
+    tokens_info: dict[str, dict],
+) -> dict[str, float]:
+    """
+    Calculates token prices along multiple paths in the token graph.
+
+    Args:
+    - paths_edges (list[list[int]]): List of edge paths for each token.
+    - paths_vertices (list[list[int]]): List of vertex paths for each token.
+    - pairs (list[str]): List of pair addresses.
+    - vertex_to_token (list[str]): Mapping of vertex indices to token symbols.
+    - pairs_info (dict[str, dict]): Information about pairs.
+    - tokens_info (dict[str, dict]): Information about tokens.
+
+    Returns:
+    - dict[str, float]: A dictionary mapping token symbols to their calculated prices.
+    """
     token_prices = {}
+
     for i in range(len(paths_edges)):
         path_edges = paths_edges[i]
         path_vertices = paths_vertices[i]
@@ -262,18 +440,34 @@ def find_token_prices(
 
 
 def find_pair_TVLs(
-    pairs,
-    token_prices,
-    token_to_vertex,
-    main_component,
-    pairs_info,
-    tokens_info,
-):
+    pairs: list[str],
+    token_prices: dict[str, float],
+    token_to_vertex: dict[str, int],
+    main_component: list[int],
+    pairs_info: dict[str, dict],
+    tokens_info: dict[str, dict],
+) -> dict[str, tuple[str, float]]:
+    """
+    Calculate Total Value Locked (TVL) for pairs.
+
+    Args:
+        pairs (list[str]): List of pair addresses.
+        token_prices (dict[str, float]): Token prices mapping.
+        token_to_vertex (dict[str, int]): Token address to graph vertex mapping.
+        main_component (list[int]): List of vertices in the main component of the token graph.
+        pairs_info (dict[str, dict]): Information about pairs.
+        tokens_info (dict[str, dict]): Information about tokens.
+
+    Returns:
+        dict[str, tuple[str, float]]: Mapping of pair addresses to a tuple containing pair symbol and TVL.
+
+    """
     TVLs = {}
     for pair in pairs:
         pair_info = pairs_info[pair]
         token0, token1 = pair_info["token0"], pair_info["token1"]
 
+        # Check if both tokens in the pair are part of the main component
         if token_to_vertex[token0] in main_component:
             reserve0, reserve1 = pair_info["reserves"][:2]
             price0, price1 = token_prices[token0], token_prices[token1]
@@ -284,6 +478,7 @@ def find_pair_TVLs(
             symbol0, symbol1 = token0_info["symbol"], token1_info["symbol"]
             decimals0, decimals1 = token0_info["decimals"], token1_info["decimals"]
 
+            # Calculate TVL using token prices and reserves
             TVL = (price0 * reserve0 * 10 ** (-decimals0)) + (
                 price1 * reserve1 * 10 ** (-decimals1)
             )
@@ -292,13 +487,13 @@ def find_pair_TVLs(
             if math.isnan(TVL) or TVL == math.inf:
                 previous_value = TVL  # to indicate whether it was NaN or infinity
                 TVL = 0
-                log.warning(
+                logging.warning(
                     f"Calculated TVL for pair {pair} ({symbol0}-{symbol1}) resulted in {previous_value}. Replaced with 0."
                 )
 
             TVLs[pair] = f"{symbol0}-{symbol1}", TVL
 
-    log.info("Successfully calculated TVL for {} pairs.".format(len(TVLs)))
+    logging.info("Successfully calculated TVL for {} pairs.".format(len(TVLs)))
     return TVLs
 
 
@@ -312,7 +507,6 @@ def main(
     recent_blocks_number: int = 10000,
     n: int = typer.Option(25, "--number-of-pairs", "-n"),
 ):
-
     # If the 'refresh_all' option is set, update all refresh flags
     if refresh_all:
         refresh_pairs = True
@@ -414,7 +608,7 @@ def main(
     TVLs_list = list(TVLs.items())
     TVLs_list.sort(key=lambda x: x[1][1], reverse=True)
     print_colored("\nDisplaying top pairs based on TVL:")
-    
+
     # Create and populate a table for visualization
     table = Table(show_header=True, header_style="bold magenta")
     table.add_column("Rank", style="dim", width=5)
