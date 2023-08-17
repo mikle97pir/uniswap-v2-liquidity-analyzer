@@ -1,21 +1,28 @@
 # --- Imports ---
 
-# Standard library imports for JSON handling and file path manipulation
+# Standard library imports
+
+# For reading and writing JSON files
 import json
+# Logging application processes and errors
+import logging
+# Python's built-in serialization module for storing python objects on disk
+import pickle
+# Path manipulation utilities for file and directory operations
 from pathlib import Path
 
-# Web3 library for Ethereum blockchain interaction
+# Third-party libraries
+
+# web3: Python library for Ethereum blockchain interaction
 from web3 import Web3
-
-# Python's built-in serialization and logging libraries
-import pickle
-import logging
-
-# Rich library for enhanced command-line printing, progress tracking, and logging
-from rich.progress import track
-from rich.logging import RichHandler
+# rich: Library for enhanced command-line printing, progress tracking, and logging
 from rich import print
+from rich.logging import RichHandler
+from rich.progress import track
 
+# Internal or project-specific imports
+
+# Constants for paths and default settings
 from constants import DATA_PATH, DEPENDENCY_CONTRACTS_PATH, DEFAULT_PRINT_COLOR
 
 # --- Logging Configuration ---

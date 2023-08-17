@@ -1,42 +1,54 @@
 # --- Imports ---
 
-# Standard library imports for JSON handling and file path manipulation
-from pathlib import Path
+# Standard library imports
 
-# Web3 library for Ethereum blockchain interaction
-from web3 import Web3
-
-# Rich library for enhanced command-line printing, progress tracking, and logging
-from rich.progress import track
-from rich import print
-from rich.table import Table
-
-# Python's built-in serialization and logging libraries
+# For logging application processes and errors
 import logging
 
-# Mathematical operations and constants
+# Mathematical operations and constants for internal computations
 import math
 
-# Igraph library for graph data structures and algorithms
-import igraph as ig
-
-# Typer library for building CLI applications
-import typer
-from typing_extensions import Annotated
-
+# System-specific parameters and functions for script exits and more
 import sys
 
+# Path manipulation utilities for file and directory operations
+from pathlib import Path
+
+# Third-party libraries
+
+# igraph: Library for creating and analyzing network graphs
+import igraph as ig
+
+# rich: Library for enhanced command-line printing, progress tracking, and logging
+from rich import print
+from rich.progress import track
+from rich.table import Table
+
+# typer: Library for building command-line interface (CLI) applications
+import typer
+
+# typing_extensions: Library to provide additional utilities related to Python's typing module
+from typing_extensions import Annotated
+
+# web3: Python library for Ethereum blockchain interaction
+from web3 import Web3
+
+# Internal or project-specific imports
+
+# Constants for application settings and parameters
 import constants
+
+# utils: Utility functions for data retrieval, logging, caching, and more
 from utils import (
-    log,
     connect_to_rpc_provider,
-    using_cache,
     get_abi_from_json,
     get_pairs_info,
-    get_tokens_info,
-    get_tokens_from_pairs,
     get_recent_contracts,
+    get_tokens_from_pairs,
+    get_tokens_info,
+    log,
     print_colored,
+    using_cache,
 )
 
 
