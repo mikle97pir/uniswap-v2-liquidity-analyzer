@@ -33,7 +33,7 @@ from constants import DATA_PATH, DEPENDENCY_CONTRACTS_PATH, DEFAULT_PRINT_COLOR
 
 # Configuring rich logger for enhanced visual feedback in the command-line interface
 logging.basicConfig(
-    level="INFO", format="%(message)s", datefmt="[%X]", handlers=[RichHandler(locals_max_string = 1)]
+    level="INFO", format="%(message)s", datefmt="[%X]", handlers=[RichHandler()]
 )
 log = logging.getLogger("rich")
 

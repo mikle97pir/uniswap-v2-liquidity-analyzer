@@ -559,11 +559,17 @@ def main(
         # Find shortest paths in the token graph to the main component from USDC
         print_colored("\nCalculating shortest paths...")
         paths_edges = token_graph.get_shortest_paths(
-            token_to_vertex[constants.USDC], to=main_component, mode="all", output="epath"
+            token_to_vertex[constants.USDC],
+            to=main_component,
+            mode="all",
+            output="epath",
         )
 
         paths_vertices = token_graph.get_shortest_paths(
-            token_to_vertex[constants.USDC], to=main_component, mode="all", output="vpath"
+            token_to_vertex[constants.USDC],
+            to=main_component,
+            mode="all",
+            output="vpath",
         )
 
         # Calculate token prices based on the found paths
@@ -613,10 +619,13 @@ def main(
     except Exception as e:
         # Log the error message
         log.error(f"An error occurred: {str(e)[:1024]}")
-        
+
         # Print the error message for the user
-        print_colored("An unexpected error occurred. Please check the logs for more details.", "red")
-        
+        print_colored(
+            "An unexpected error occurred. Please check the logs for more details.",
+            "red",
+        )
+
         # Exit the program with error code 1
         sys.exit(1)
 
