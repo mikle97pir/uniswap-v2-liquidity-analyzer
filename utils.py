@@ -11,8 +11,9 @@ import logging
 # Rich library for enhanced command-line printing, progress tracking, and logging
 from rich.progress import track
 from rich.logging import RichHandler
+from rich import print
 
-from constants import DATA_PATH, DEPENDENCY_CONTRACTS_PATH
+from constants import DATA_PATH, DEPENDENCY_CONTRACTS_PATH, DEFAULT_PRINT_COLOR
 
 # --- Logging Configuration ---
 
@@ -157,3 +158,7 @@ def get_recent_contracts(tx_receipts):
     )
 
     return recent_contracts
+
+
+def print_colored(text: str, color: str = DEFAULT_PRINT_COLOR):
+    print(f"[{color}]{text}[/{color}]")
