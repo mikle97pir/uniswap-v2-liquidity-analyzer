@@ -459,22 +459,32 @@ def main(
 ):
     w3 = Web3(Web3.HTTPProvider(rpc_provider))
 
+    log.info("Loading contract ABIs...")
     ABIs = {
         contract_name: get_abi_from_json(contract_name)
         for contract_name in DEPENDENCY_CONTRACT_NAMES
     }
 
+    log.info("Retrieving pairs...")
     pairs = get_pairs(w3, ABIs, refresh=refresh_pairs)
+
+    log.info("Filtering active pairs...")
     active_pairs = filter_inactive_pairs(
         w3,
         pairs,
         recent_blocks_number,
         refresh=refresh_blocks,
     )
+
+    log.info("Gathering info about active pairs...")
     active_pairs_info = get_active_pairs_info(
         w3, ABIs, active_pairs, refresh=refresh_pairs_info
     )
+
+    log.info("Extracting active tokens from pairs...")
     active_tokens = get_tokens_from_pairs(active_pairs_info)
+
+    log.info("Gathering info about active tokens...")
     active_tokens_info = get_active_tokens_info(
         w3, ABIs, active_tokens, refresh=refresh_tokens_info
     )
@@ -482,13 +492,16 @@ def main(
     vertex_to_token = list(active_tokens)
     token_to_vertex = {vertex_to_token[i]: i for i in range(len(vertex_to_token))}
 
+    log.info("Creating token graph...")
     token_graph = create_token_graph(
         vertex_to_token, token_to_vertex, active_pairs, active_pairs_info
     )
 
+    log.info("Finding main component in the graph...")
     components = token_graph.connected_components(mode="weak")
     main_component = components[0]
 
+    log.info("Calculating shortest paths and token prices...")
     paths_edges = token_graph.get_shortest_paths(
         token_to_vertex[USDC], to=main_component, mode="all", output="epath"
     )
@@ -506,6 +519,7 @@ def main(
         active_tokens_info,
     )
 
+    log.info("Calculating Total Value Locked (TVL) for pairs...")
     TVLs = find_pair_TVLs(
         active_pairs,
         token_prices,
@@ -518,6 +532,7 @@ def main(
     TVLs_list = list(TVLs.items())
     TVLs_list.sort(key=lambda x: x[1][1], reverse=True)
 
+    log.info("Displaying top pairs based on TVL:")
     table = Table(show_header=True, header_style="bold magenta")
     table.add_column("Rank", style="dim", width=5)
     table.add_column("Pair", style="bold", width=20)
@@ -529,6 +544,7 @@ def main(
 
     print(table)
 
+    log.info(f"Successfully retrieved and displayed the top {n} pairs based on TVL!")
 
 if __name__ == "__main__":
     typer.run(main)
