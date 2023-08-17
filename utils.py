@@ -4,6 +4,9 @@
 import json
 from pathlib import Path
 
+# Web3 library for Ethereum blockchain interaction
+from web3 import Web3
+
 # Python's built-in serialization and logging libraries
 import pickle
 import logging
@@ -22,6 +25,13 @@ logging.basicConfig(
     level="INFO", format="%(message)s", datefmt="[%X]", handlers=[RichHandler()]
 )
 log = logging.getLogger("rich")
+
+
+def connect_to_rpc_provider(rpc: str) -> Web3:
+    w3 = Web3(Web3.HTTPProvider(rpc))
+    if not w3.is_connected():
+        raise ConnectionError("Unable to connect to RPC provider.")
+    return w3
 
 
 def using_cache(data_filename: str):

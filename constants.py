@@ -24,6 +24,6 @@ TOKEN_OVERRIDES = {
     "0x89d24A6b4CcB1B6fAA2625fE562bDD9a23260359": {"symbol": "SAI"},
 }
 
-DEFAULT_RPC_PROVIDER = "https://eth.llamarpc.com/rpc/01H7QXYGC7M60A31YJQSAHVFHK"
+DEFAULT_RPC_PROVIDER = "https://eth.llamarpc.com"
 
 DEFAULT_PRINT_COLOR = "green"

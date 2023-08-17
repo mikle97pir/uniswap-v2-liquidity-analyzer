@@ -24,10 +24,12 @@ import igraph as ig
 import typer
 from typing_extensions import Annotated
 
+import sys
 
 import constants
 from utils import (
     log,
+    connect_to_rpc_provider,
     using_cache,
     get_abi_from_json,
     get_pairs_info,
@@ -291,13 +293,24 @@ def find_pair_TVLs(
 def main(
     refresh_pairs: bool = False,
     refresh_blocks: bool = False,
-    refresh_pairs_info: bool = False,
+    refresh_pairs_info: bool = typer.Option(False, "--refresh-pairs-info", "-r"),
     refresh_tokens_info: bool = False,
-    rpc_provider: str = constants.DEFAULT_RPC_PROVIDER,
+    refresh_all: bool = typer.Option(False, "--refresh-all", "-R"),
+    rpc: str = constants.DEFAULT_RPC_PROVIDER,
     recent_blocks_number: int = 10000,
-    n: Annotated[int, typer.Option("--number-of-pairs", "-n")] = 25,
+    n: int = typer.Option(25, "--number-of-pairs", "-n"),
 ):
-    w3 = Web3(Web3.HTTPProvider(rpc_provider))
+    if refresh_all:
+        refresh_pairs = True
+        refresh_blocks = True
+        refresh_pairs_info = True
+        refresh_tokens_info = True
+
+    try:
+        w3 = connect_to_rpc_provider(rpc)
+    except ConnectionError as e:
+        log.error(f"Error: {e}")
+        sys.exit(1)
 
     print_colored("Loading contract ABIs...")
     ABIs = {
