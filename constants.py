@@ -36,7 +36,7 @@ TOKEN_OVERRIDES = {
 
 # Default Ethereum RPC provider URL.
 # This is used to connect and interact with the Ethereum blockchain.
-DEFAULT_RPC_PROVIDER = "https://eth.llamarpc.com"
+DEFAULT_RPC_PROVIDER = "wss://eth.llamarpc.com"
 
 # Default color for the print messages in the terminal.
 # This helps to provide a consistent visual feedback.

@@ -52,7 +52,7 @@ def connect_to_rpc_provider(rpc: str) -> Web3:
         ConnectionError: If unable to connect to the given RPC provider.
     """
 
-    w3 = Web3(Web3.HTTPProvider(rpc))
+    w3 = Web3(Web3.WebsocketProvider(rpc))
 
     if not w3.is_connected():
         log.error("Unable to connect to RPC provider.")
