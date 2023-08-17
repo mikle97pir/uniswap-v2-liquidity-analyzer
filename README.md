@@ -27,13 +27,7 @@ A command-line tool for analyzing liquidity in Uniswap V2 pairs on the Ethereum 
    cd uniswap-v2-liquidity-analyzer
    ```
 
-2. (Optional) Create a virtual environment:
-   ```bash
-   python -m venv env
-   source env/bin/activate  # On Windows, use `env\Scripts\activate`
-   ```
-
-3. Install the required packages:
+2. Install the required packages:
    ```bash
    pip install -r requirements.txt
    ```
