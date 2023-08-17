@@ -42,6 +42,12 @@ def connect_to_rpc_provider(rpc: str) -> Web3:
     """
     Establishes a connection to an RPC provider and returns a Web3 instance.
 
+    This function intelligently selects the appropriate provider (HTTP, WebSocket, or IPC)
+    based on the structure of the given RPC URL:
+    - HTTP: For URLs starting with 'http://' or 'https://'
+    - WebSocket: For URLs starting with 'ws://' or 'wss://'
+    - IPC: For URLs ending with '.ipc'
+
     Args:
         rpc (str): The RPC provider URL to connect to.
 
@@ -49,10 +55,19 @@ def connect_to_rpc_provider(rpc: str) -> Web3:
         Web3: An instance of Web3 connected to the RPC provider.
 
     Raises:
+        ValueError: If the RPC URL format is unrecognized.
         ConnectionError: If unable to connect to the given RPC provider.
     """
 
-    w3 = Web3(Web3.WebsocketProvider(rpc))
+    if rpc.startswith(('http://', 'https://')):
+        w3 = Web3(Web3.HTTPProvider(rpc))
+    elif rpc.startswith(('ws://', 'wss://')):
+        w3 = Web3(Web3.WebsocketProvider(rpc))
+    elif rpc.endswith('.ipc'):
+        w3 = Web3(Web3.IPCProvider(rpc))
+    else:
+        log.error("Invalid RPC URL format.")
+        raise ValueError("Invalid RPC URL format.")
 
     if not w3.is_connected():
         log.error("Unable to connect to RPC provider.")
