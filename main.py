@@ -292,7 +292,7 @@ def main(
     refresh_blocks: bool = False,
     refresh_pairs_info: bool = False,
     refresh_tokens_info: bool = False,
-    rpc_provider: str = "https://eth.llamarpc.com/rpc/01H7QXYGC7M60A31YJQSAHVFHK",
+    rpc_provider: str = constants.DEFAULT_RPC_PROVIDER,
     recent_blocks_number: int = 10000,
     n: Annotated[int, typer.Option("--number-of-pairs", "-n")] = 25,
 ):
