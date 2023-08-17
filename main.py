@@ -326,16 +326,21 @@ def find_token_price_by_path(
     token = vertex_to_token[path_vertices[-1]]
 
     for i, edge in enumerate(path_edges):
+        pair_address = pairs[edge]
         start_token, end_token = (
             vertex_to_token[path_vertices[i]],
             vertex_to_token[path_vertices[i + 1]],
+        )
+        start_symbol, end_symbol = (
+            tokens_info[start_token]["symbol"],
+            tokens_info[end_token]["symbol"],
         )
         start_decimals, end_decimals = (
             tokens_info[start_token]["decimals"],
             tokens_info[end_token]["decimals"],
         )
 
-        pair_info = pairs_info[pairs[edge]]
+        pair_info = pairs_info[pair_address]
 
         if (start_token, end_token) == (pair_info["token0"], pair_info["token1"]):
             start_reserves, end_reserves = pair_info["reserves"][:2]
@@ -344,9 +349,25 @@ def find_token_price_by_path(
 
         if end_reserves == 0:
             if start_reserves == 0:
-                return token, math.nan
+                log.warning(
+                    "Both reserves are zero for pair: {} ({}-{} / {}-{})".format(
+                        pair_address, start_token, end_token, start_symbol, end_symbol
+                    )
+                )
+                return token, 0
             else:
-                return token, math.inf
+                log.warning(
+                    "End reserve ({} / {}) is zero for pair: {} ({}-{} / {}-{})".format(
+                        end_token,
+                        end_symbol,
+                        pair_address,
+                        start_token,
+                        end_token,
+                        start_symbol,
+                        end_symbol,
+                    )
+                )
+                return token, 0
 
         price *= (start_reserves / end_reserves) * 10 ** (end_decimals - start_decimals)
 
