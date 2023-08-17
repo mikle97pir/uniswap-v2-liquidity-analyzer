@@ -4,10 +4,13 @@
 
 # For reading and writing JSON files
 import json
-# Logging application processes and errors
+
+# For logging application processes and errors
 import logging
+
 # Python's built-in serialization module for storing python objects on disk
 import pickle
+
 # Path manipulation utilities for file and directory operations
 from pathlib import Path
 
@@ -15,6 +18,7 @@ from pathlib import Path
 
 # web3: Python library for Ethereum blockchain interaction
 from web3 import Web3
+
 # rich: Library for enhanced command-line printing, progress tracking, and logging
 from rich import print
 from rich.logging import RichHandler
