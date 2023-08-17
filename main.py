@@ -459,16 +459,16 @@ def main(
 ):
     w3 = Web3(Web3.HTTPProvider(rpc_provider))
 
-    log.info("Loading contract ABIs...")
+    print("[cornsilk1]Loading contract ABIs...[/cornsilk1]")
     ABIs = {
         contract_name: get_abi_from_json(contract_name)
         for contract_name in DEPENDENCY_CONTRACT_NAMES
     }
 
-    log.info("Retrieving pairs...")
+    print("\n[cornsilk1]Retrieving pairs...[/cornsilk1]")
     pairs = get_pairs(w3, ABIs, refresh=refresh_pairs)
 
-    log.info("Filtering active pairs...")
+    print("\n[cornsilk1]Filtering active pairs...[/cornsilk1]")
     active_pairs = filter_inactive_pairs(
         w3,
         pairs,
@@ -476,15 +476,15 @@ def main(
         refresh=refresh_blocks,
     )
 
-    log.info("Gathering info about active pairs...")
+    print("\n[cornsilk1]Gathering info about active pairs...[/cornsilk1]")
     active_pairs_info = get_active_pairs_info(
         w3, ABIs, active_pairs, refresh=refresh_pairs_info
     )
 
-    log.info("Extracting active tokens from pairs...")
+    print("\n[cornsilk1]Extracting active tokens from pairs...[/cornsilk1]")
     active_tokens = get_tokens_from_pairs(active_pairs_info)
 
-    log.info("Gathering info about active tokens...")
+    print("\n[cornsilk1]Gathering info about active tokens...[/cornsilk1]")
     active_tokens_info = get_active_tokens_info(
         w3, ABIs, active_tokens, refresh=refresh_tokens_info
     )
@@ -492,16 +492,16 @@ def main(
     vertex_to_token = list(active_tokens)
     token_to_vertex = {vertex_to_token[i]: i for i in range(len(vertex_to_token))}
 
-    log.info("Creating token graph...")
+    print("\n[cornsilk1]Creating token graph...[/cornsilk1]")
     token_graph = create_token_graph(
         vertex_to_token, token_to_vertex, active_pairs, active_pairs_info
     )
 
-    log.info("Finding main component in the graph...")
+    print("\n[cornsilk1]Finding main component in the graph...[/cornsilk1]")
     components = token_graph.connected_components(mode="weak")
     main_component = components[0]
 
-    log.info("Calculating shortest paths and token prices...")
+    print("\n[cornsilk1]Calculating shortest paths and token prices...[/cornsilk1]")
     paths_edges = token_graph.get_shortest_paths(
         token_to_vertex[USDC], to=main_component, mode="all", output="epath"
     )
@@ -519,7 +519,7 @@ def main(
         active_tokens_info,
     )
 
-    log.info("Calculating Total Value Locked (TVL) for pairs...")
+    print("\n[cornsilk1]Calculating Total Value Locked (TVL) for pairs...[/cornsilk1]")
     TVLs = find_pair_TVLs(
         active_pairs,
         token_prices,
@@ -532,19 +532,20 @@ def main(
     TVLs_list = list(TVLs.items())
     TVLs_list.sort(key=lambda x: x[1][1], reverse=True)
 
-    log.info("Displaying top pairs based on TVL:")
+    print("\n[cornsilk1]Displaying top pairs based on TVL:[/cornsilk1]")
     table = Table(show_header=True, header_style="bold magenta")
     table.add_column("Rank", style="dim", width=5)
     table.add_column("Pair", style="bold", width=20)
-    table.add_column("TVL (USDC)", style="bold", justify="right")
+    table.add_column("TVL (USDC)", style="bold", justify="right", width=20)
+    table.add_column("Address", style="dim", width=42)
 
     for i, (pair, (symbol_pair, value)) in enumerate(TVLs_list[:n], 1):
         formatted_value = f"{value:,.2f} USDC"
-        table.add_row(str(i), symbol_pair, formatted_value)
+        table.add_row(str(i), symbol_pair, formatted_value, pair)
 
     print(table)
 
-    log.info(f"Successfully retrieved and displayed the top {n} pairs based on TVL!")
+    print(f"\n[cornsilk1]Successfully retrieved and displayed the top {n} pairs based on TVL![/cornsilk1]")
 
 
 if __name__ == "__main__":
