@@ -268,7 +268,7 @@ def get_tokens_info(w3, ABIs, tokens):
 @using_cache("active_pairs_info")
 def get_active_pairs_info(w3, ABIs, active_pairs):
     active_pairs_info = get_pairs_info(w3, ABIs, active_pairs)
-    log.success(
+    log.info(
         f"Successfully retrieved information for {len(active_pairs_info)} active pairs."
     )
     return active_pairs_info
@@ -290,7 +290,7 @@ def get_active_tokens_info(w3, ABIs, active_tokens):
     for address, details in overrides.items():
         active_tokens_info[address].update(details)
 
-    log.success(
+    log.info(
         f"Successfully retrieved and modified information for {len(active_tokens_info)} active tokens."
     )
     return active_tokens_info
@@ -311,6 +311,11 @@ def create_token_graph(vertex_to_token, token_to_vertex, pairs, pairs_info):
         vertice0 = token_to_vertex[info["token0"]]
         vertice1 = token_to_vertex[info["token1"]]
         token_graph.add_edges([(vertice0, vertice1)])
+    log.info(
+        "Token graph successfully created with {0} vertices and {1} edges.".format(
+            token_graph.vcount(), token_graph.ecount()
+        )
+    )
     return token_graph
 
 
