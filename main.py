@@ -249,7 +249,7 @@ def get_active_tokens_info(w3: Web3, ABIs: dict, active_tokens: list[str]) -> di
 
     # Update token info with overrides from constants, if they exist
     for address, details in constants.TOKEN_OVERRIDES.items():
-        active_tokens_info[address].update(details)
+        active_tokens_info[address] = details
 
     log.info(
         f"Successfully retrieved and modified information for {len(active_tokens_info)} active tokens."
