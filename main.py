@@ -49,6 +49,7 @@ from utils import (
     using_cache,
 )
 
+
 @using_cache("pairs")
 def get_pairs(w3: Web3, ABIs: dict) -> list[str]:
     """
@@ -156,7 +157,9 @@ def get_recent_tx_receipts(w3: Web3, nblocks: int) -> list[web3.types.TxReceipt]
             tx_receipt = w3.eth.get_transaction_receipt(tx_hash)
             tx_receipts.append(tx_receipt)
         except Exception as e:
-            log.warning(f"Failed to fetch transaction receipt for {tx_hash}: {str(e)}")
+            log.warning(
+                f"Failed to fetch transaction receipt for {tx_hash.hex()}: {str(e)}"
+            )
 
     log.info(
         f"Successfully fetched {len(tx_receipts)} transaction receipts from the last {nblocks} blocks."
