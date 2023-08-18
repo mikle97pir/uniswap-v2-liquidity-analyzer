@@ -22,10 +22,20 @@ A command-line tool for analyzing liquidity in Uniswap V2 pairs on the Ethereum 
 ## Installation
 
 1. Clone the repository:
+
+   - **Using HTTPS**:
+     ```bash
+     git clone https://github.com/mikle97pir/uniswap-v2-liquidity-analyzer.git
+     ```
+
+   - **Using SSH**:
+     ```bash
+     git clone git@github.com:mikle97pir/uniswap-v2-liquidity-analyzer.git
+     ```
+
+   After cloning, navigate to the project directory:
    ```bash
-   git clone https://github.com/mikle97pir/uniswap-v2-liquidity-analyzer.git
    cd uniswap-v2-liquidity-analyzer
-   ```
 
 2. Install the required packages:
    ```bash
