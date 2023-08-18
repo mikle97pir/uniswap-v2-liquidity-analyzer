@@ -27,9 +27,6 @@ from rich.table import Table
 # typer: Library for building command-line interface (CLI) applications
 import typer
 
-# typing_extensions: Library to provide additional utilities related to Python's typing module
-from typing_extensions import Annotated
-
 # web3: Python library for Ethereum blockchain interaction
 from web3 import Web3
 
