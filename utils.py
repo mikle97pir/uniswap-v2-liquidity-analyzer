@@ -329,8 +329,8 @@ def get_recent_contracts(tx_receipts: list) -> set:
     recent_contracts = set()
 
     for receipt in tx_receipts:
-        for log in receipt.logs:
-            recent_contracts.add(log["address"])
+        for receipt_log in receipt.logs:
+            recent_contracts.add(receipt_log["address"])
 
     log.info(
         f"Successfully extracted {len(recent_contracts)} unique contract addresses from transaction receipts."
