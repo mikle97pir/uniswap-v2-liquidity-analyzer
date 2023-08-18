@@ -17,6 +17,7 @@ from pathlib import Path
 # Third-party libraries
 
 # web3: Python library for Ethereum blockchain interaction
+import web3
 from web3 import Web3
 
 # rich: Library for enhanced command-line printing, progress tracking, and logging
@@ -162,7 +163,7 @@ def get_abi_from_json(contract_name: str) -> dict:
         raise
 
 
-def get_pair_info(w3: Web3, ABIs: dict, pair: str) -> dict:
+def get_pair_info(w3: Web3, ABIs: dict, pair) -> dict:
     """
     Retrieve information about a specific Uniswap V2 pair contract.
 
@@ -200,7 +201,7 @@ def get_pair_info(w3: Web3, ABIs: dict, pair: str) -> dict:
         raise
 
 
-def get_token_info(w3: Web3, ABIs: dict, token: str) -> dict:
+def get_token_info(w3: Web3, ABIs: dict, token) -> dict:
     """
     Retrieve basic information (symbol and decimals) about a specific ERC20 token contract.
 

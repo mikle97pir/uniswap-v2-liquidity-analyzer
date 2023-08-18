@@ -28,6 +28,7 @@ from rich.table import Table
 import typer
 
 # web3: Python library for Ethereum blockchain interaction
+import web3
 from web3 import Web3
 
 # Internal or project-specific imports
@@ -48,9 +49,8 @@ from utils import (
     using_cache,
 )
 
-
 @using_cache("pairs")
-def get_pairs(w3: Web3, ABIs: dict[str, any]) -> list[str]:
+def get_pairs(w3: Web3, ABIs: dict) -> list[str]:
     """
     Retrieve all the pair addresses from the Uniswap Factory.
 
@@ -87,7 +87,7 @@ def get_pairs(w3: Web3, ABIs: dict[str, any]) -> list[str]:
 
 
 @using_cache("blocks")
-def get_recent_blocks(w3: Web3, nblocks: int) -> list[dict]:
+def get_recent_blocks(w3: Web3, nblocks: int) -> list[web3.types.BlockData]:
     """
     Retrieve the most recent blocks from the Ethereum blockchain.
 
@@ -127,7 +127,7 @@ def get_recent_blocks(w3: Web3, nblocks: int) -> list[dict]:
 
 
 @using_cache("tx_receipts")
-def get_recent_tx_receipts(w3: Web3, nblocks: int) -> list[dict]:
+def get_recent_tx_receipts(w3: Web3, nblocks: int) -> list[web3.types.TxReceipt]:
     """
     Retrieve the transaction receipts of the most recent transactions from the Ethereum blockchain.
 
