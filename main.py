@@ -57,38 +57,33 @@ def get_pairs(w3: Web3, ABIs: dict[str, any]) -> list[str]:
     This function attempts to get all the pair addresses from the Uniswap V2 Factory contract.
     The result can be cached, and can be retrieved from cache if it exists and if the refresh flag isn't set.
 
+    Note: In case of any issues while fetching a pair, a warning will be logged, and the function will continue
+    to the next pair.
+
     Parameters:
     - w3 (Web3): The Web3 instance used for Ethereum blockchain interactions.
     - ABIs (dict): Dictionary containing the Application Binary Interfaces (ABIs) for the necessary Ethereum contracts.
 
     Returns:
     - list[str]: A list of Ethereum addresses representing the pairs from the Uniswap Factory.
-
-    Raises:
-    - Exception: If there's an issue accessing the Uniswap Factory contract or fetching the pairs.
     """
+    uniswap_factory_contract = w3.eth.contract(
+        address=constants.UNISWAP_FACTORY, abi=ABIs["UniswapV2Factory"]
+    )
+    all_pairs_length = uniswap_factory_contract.functions.allPairsLength().call()
+    pairs = []
 
-    try:
-        uniswap_factory_contract = w3.eth.contract(
-            address=constants.UNISWAP_FACTORY, abi=ABIs["UniswapV2Factory"]
-        )
+    for i in track(
+        range(all_pairs_length), description="Fetching pairs from Uniswap Factory"
+    ):
+        try:
+            pair = uniswap_factory_contract.functions.allPairs(i).call()
+            pairs.append(pair)
+        except Exception as e:
+            log.warning(f"Failed to fetch pair at index {i}: {str(e)}")
 
-        all_pairs_length = uniswap_factory_contract.functions.allPairsLength().call()
-
-        pairs = [
-            uniswap_factory_contract.functions.allPairs(i).call()
-            for i in track(
-                range(all_pairs_length),
-                description="Fetching pairs from Uniswap Factory",
-            )
-        ]
-
-        log.info(f"Successfully fetched {len(pairs)} pairs from Uniswap Factory.")
-        return pairs
-
-    except Exception as e:
-        log.error(f"Failed to fetch pairs from Uniswap Factory.")
-        raise
+    log.info(f"Successfully fetched {len(pairs)} pairs from Uniswap Factory.")
+    return pairs
 
 
 @using_cache("blocks")
@@ -140,36 +135,33 @@ def get_recent_tx_receipts(w3: Web3, nblocks: int) -> list[dict]:
     the Ethereum blockchain. The result can be cached, and can be retrieved from cache if it exists
     and if the refresh flag isn't set.
 
+    Note: In case of any issues while fetching a transaction receipt, a warning will be logged, and the function
+    will continue to the next transaction.
+
     Parameters:
     - w3 (Web3): The Web3 instance used for Ethereum blockchain interactions.
     - nblocks (int): The number of most recent blocks to consider.
 
     Returns:
     - list[dict]: A list of transaction receipts in dictionary format.
-
-    Raises:
-    - Exception: If there's an issue accessing the Ethereum blockchain or fetching the transaction receipts.
     """
+    blocks = get_recent_blocks(w3, nblocks, refresh=True)
+    tx_hashes = [tx_hash for block in blocks for tx_hash in block.transactions]
+    tx_receipts = []
 
-    try:
-        blocks = get_recent_blocks(w3, nblocks, refresh=True)
-        tx_hashes = [tx_hash for block in blocks for tx_hash in block.transactions]
+    for tx_hash in track(
+        tx_hashes, description="Fetching receipts of recent transactions"
+    ):
+        try:
+            tx_receipt = w3.eth.get_transaction_receipt(tx_hash)
+            tx_receipts.append(tx_receipt)
+        except Exception as e:
+            log.warning(f"Failed to fetch transaction receipt for {tx_hash}: {str(e)}")
 
-        tx_receipts = [
-            w3.eth.get_transaction_receipt(tx_hash)
-            for tx_hash in track(
-                tx_hashes, description="Fetching receipts of recent transactions"
-            )
-        ]
-
-        log.info(
-            f"Successfully fetched {len(tx_receipts)} transaction receipts from the last {nblocks} blocks."
-        )
-        return tx_receipts
-
-    except Exception as e:
-        log.error(f"Failed to fetch recent transaction receipts.")
-        raise
+    log.info(
+        f"Successfully fetched {len(tx_receipts)} transaction receipts from the last {nblocks} blocks."
+    )
+    return tx_receipts
 
 
 @using_cache("active_pairs")
