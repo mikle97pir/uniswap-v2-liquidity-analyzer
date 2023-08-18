@@ -214,7 +214,7 @@ def get_token_info(w3: Web3, ABIs: dict, token: str) -> dict:
 
     Note:
     - In cases where the token contract does not provide a symbol or decimals correctly,
-      default values of '__BAD_SYMBOL__' for symbol and -1 for decimals are returned.
+      default values of '__BAD_SYMBOL__' for symbol and 18 for decimals are returned.
     """
 
     token_contract = w3.eth.contract(address=token, abi=ABIs["ERC20"])
@@ -231,9 +231,9 @@ def get_token_info(w3: Web3, ABIs: dict, token: str) -> dict:
         decimals = token_contract.functions.decimals().call()
     except Exception as e:
         log.warning(
-            f"Error retrieving decimals for token address: {token}. Defaulting to -1"
+            f"Error retrieving decimals for token address: {token}. Defaulting to 18"
         )
-        decimals = -1
+        decimals = 18
 
     token_info = {
         "symbol": symbol,

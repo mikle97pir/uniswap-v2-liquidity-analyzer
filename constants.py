@@ -27,11 +27,11 @@ USDC = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
 # provide all the necessary details or has known discrepancies.
 TOKEN_OVERRIDES = {
     "0x9f8F72aA9304c8B593d555F12eF6589cC3A579A2": {"symbol": "MKR"},
-    # "0x0Ba45A8b5d5575935B8158a88C631E9F9C95a2e5": {"symbol": "TRB", "decimals": 18},
-    # "0x9469D013805bFfB7D3DEBe5E7839237e535ec483": {"symbol": "RING"},
+    "0x0Ba45A8b5d5575935B8158a88C631E9F9C95a2e5": {"symbol": "TRB", "decimals": 18},
+    "0x9469D013805bFfB7D3DEBe5E7839237e535ec483": {"symbol": "RING"},
     "0x9F284E1337A815fe77D2Ff4aE46544645B20c5ff": {"symbol": "KTON"},
-    # "0x431ad2ff6a9C365805eBaD47Ee021148d6f7DBe0": {"symbol": "DF"},
-    # "0x89d24A6b4CcB1B6fAA2625fE562bDD9a23260359": {"symbol": "SAI"},
+    "0x431ad2ff6a9C365805eBaD47Ee021148d6f7DBe0": {"symbol": "DF"},
+    "0x89d24A6b4CcB1B6fAA2625fE562bDD9a23260359": {"symbol": "SAI"},
 }
 
 # Default Ethereum RPC provider URL.
@@ -45,4 +45,4 @@ DEFAULT_PRINT_COLOR = "green"
 # Default number of recent blocks to consider when filtering for active pairs.
 # If this value is altered during runtime using the --recent-blocks-number option,
 # it will trigger a complete data refresh to ensure consistency.
-DEFAULT_RECENT_BLOCKS_NUMBER = 10000
+DEFAULT_RECENT_BLOCKS_NUMBER = 1000

@@ -249,7 +249,11 @@ def get_active_tokens_info(w3: Web3, ABIs: dict, active_tokens: list[str]) -> di
 
     # Update token info with overrides from constants, if they exist
     for address, details in constants.TOKEN_OVERRIDES.items():
-        active_tokens_info[address].update(details)
+        # Check if the address exists in active_tokens_info before updating
+        if address in active_tokens_info:
+            active_tokens_info[address].update(details)
+        else:
+            log.warning(f"Override found for {address}, but it's not present in the active tokens list.")
 
     log.info(
         f"Successfully retrieved and modified information for {len(active_tokens_info)} active tokens."
