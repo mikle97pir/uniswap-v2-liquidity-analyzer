@@ -496,13 +496,12 @@ def main(
     # If the 'recent_blocks_number' option is explicitly provided (even with the default value),
     # automatically set the 'refresh_all' flag to True
     # This ensures that when the number of blocks is changed, old blocks are not loaded from the cache
-    print(recent_blocks_number)
     if recent_blocks_number is not None:
         refresh_all = True
-        if (
-            recent_blocks_number == None
-        ):  # if user didn't specify a custom number, set to default
-            recent_blocks_number = constants.DEFAULT_RECENT_BLOCKS_NUMBER
+    if recent_blocks_number == None:
+        # if user didn't specify a custom number, set to default
+        recent_blocks_number = constants.DEFAULT_RECENT_BLOCKS_NUMBER
+    print(recent_blocks_number)
 
     # If the 'refresh_all' option is set, update all refresh flags
     if refresh_all:
