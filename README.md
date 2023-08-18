@@ -54,16 +54,18 @@ To start the program with the default options:
 python main.py
 ```
 
-Additional command-line options:
+## Additional command-line options:
 
-- `--refresh-all` or `-R`: This will update all data, including the list of pairs and tokens considered active. However, using this option can be much longer as it downloads a significant amount of transaction receipts. This can be problematic without your own node due to the extensive number of requests.
-- `--refresh-pairs-info` or `-r`: Updates the TVL and order of pairs in the output, but doesn't update the list of pairs and tokens considered active, which means some pairs might be missed. Faster than using `-R`.
+- `--refresh-all`: This will update all data, including the list of pairs and tokens considered active. However, using this option can be much longer as it downloads a significant amount of transaction receipts. This can be problematic without your own node due to the extensive number of requests.
+- `--refresh-all-but-pairs` or `-R`: Refreshes all data except for the list of all pairs. This is particularly useful when you only want to filter the active ones from the already retrieved list, making the operation faster.
+
+- `--refresh-pairs-info` or `-r`: Updates the TVL and order of pairs in the output, but doesn't update the list of pairs and tokens considered active, which means some pairs might be missed. For quick updates, especially without your own node, the `-r` option is recommended. It's a more time-efficient alternative to the `-R` option.
 
 - `--number-of-pairs` or `-n`: Set the number of top pairs to display based on TVL.
 
-- `--rpc`: Specify your own RPC endpoint. The default one provided is free but might not handle a large volume of requests efficiently.
+- `--rpc`: Specify your own RPC endpoint. The default one provided is free but might not handle a large volume of requests efficiently. Supports HTTP, WSS, and IPC providers.
 
-Example:
+### Example:
 
 ```bash
 python main.py -r -n 25
@@ -71,9 +73,9 @@ python main.py -r -n 25
 
 This command will refresh the Total Value Locked and order of pairs but will use the previously fetched list of active pairs and tokens.
 
-Option Interaction: `--recent-blocks-number` and `--refresh-all`
+### Option Interaction: `--recent-blocks-number` and `--refresh-all-but-pairs`
 
-When using the `--recent-blocks-number` option, be aware that this will automatically trigger the` --refresh-all` option. This is a safeguard mechanism to ensure that when the number of blocks is adjusted, the program does not load old blocks from the cache, which might lead to inconsistencies. This behavior persists even if `--recent-blocks-number` is provided explicitly with its default value.
+When using the `--recent-blocks-number` option, be aware that this will automatically trigger the `--refresh-all-but-pairs` option. This is a safeguard mechanism to ensure that when the number of blocks is adjusted, the program does not load old blocks from the cache, which might lead to inconsistencies. This behavior persists even if `--recent-blocks-number` is provided explicitly with its default value.
 
 ### Sample Output
 

@@ -253,7 +253,9 @@ def get_active_tokens_info(w3: Web3, ABIs: dict, active_tokens: list[str]) -> di
         if address in active_tokens_info:
             active_tokens_info[address].update(details)
         else:
-            log.warning(f"Override found for {address}, but it's not present in the active tokens list.")
+            log.warning(
+                f"Override found for {address}, but it's not present in the active tokens list."
+            )
 
     log.info(
         f"Successfully retrieved and modified information for {len(active_tokens_info)} active tokens."
@@ -490,7 +492,8 @@ def main(
     refresh_blocks: bool = False,
     refresh_pairs_info: bool = typer.Option(False, "--refresh-pairs-info", "-r"),
     refresh_tokens_info: bool = False,
-    refresh_all: bool = typer.Option(False, "--refresh-all", "-R"),
+    refresh_all_but_pairs: bool = typer.Option(False, "--refresh-all-but-pairs", "-R"),
+    refresh_all: bool = False,
     rpc: str = constants.DEFAULT_RPC_PROVIDER,
     recent_blocks_number: int = typer.Option(
         None, "--recent-blocks-number", "-b"
@@ -498,10 +501,10 @@ def main(
     n: int = typer.Option(25, "--number-of-pairs", "-n"),
 ):
     # If the 'recent_blocks_number' option is explicitly provided (even with the default value),
-    # automatically set the 'refresh_all' flag to True
+    # automatically set the 'refresh_all_but_pairs' flag to True
     # This ensures that when the number of blocks is changed, old blocks are not loaded from the cache
     if recent_blocks_number is not None:
-        refresh_all = True
+        refresh_all_but_pairs = True
     if recent_blocks_number == None:
         # if user didn't specify a custom number, set to default
         recent_blocks_number = constants.DEFAULT_RECENT_BLOCKS_NUMBER
@@ -509,6 +512,10 @@ def main(
     # If the 'refresh_all' option is set, update all refresh flags
     if refresh_all:
         refresh_pairs = True
+        refresh_all_but_pairs = True
+
+    # If the 'refresh_all' option is set, update all refresh flags but pairs
+    if refresh_all_but_pairs:
         refresh_blocks = True
         refresh_pairs_info = True
         refresh_tokens_info = True
