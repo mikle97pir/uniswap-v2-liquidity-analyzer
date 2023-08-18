@@ -45,4 +45,4 @@ DEFAULT_PRINT_COLOR = "green"
 # Default number of recent blocks to consider when filtering for active pairs.
 # If this value is altered during runtime using the --recent-blocks-number option,
 # it will trigger a complete data refresh to ensure consistency.
-DEFAULT_RECENT_BLOCKS_NUMBER = 1000
+DEFAULT_RECENT_BLOCKS_NUMBER = 10000
