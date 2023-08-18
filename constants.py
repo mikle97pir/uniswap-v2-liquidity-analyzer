@@ -4,7 +4,7 @@
 # These contracts define the necessary interaction patterns and functionalities.
 DEPENDENCY_CONTRACT_NAMES = ["ERC20", "UniswapV2Factory", "UniswapV2Pair"]
 
-# Directory path indicating where the contract ABIs 
+# Directory path indicating where the contract ABIs
 # (Application Binary Interfaces) can be found.
 # ABIs define how to call functions in a smart contract.
 DEPENDENCY_CONTRACTS_PATH = "abi"
@@ -14,7 +14,7 @@ DEPENDENCY_CONTRACTS_PATH = "abi"
 DATA_PATH = "data"
 
 # Ethereum address for the Uniswap V2 Factory contract.
-# The factory is a central piece of the Uniswap infrastructure 
+# The factory is a central piece of the Uniswap infrastructure
 # which is responsible for creating new exchange pairs.
 UNISWAP_FACTORY = "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f"
 
@@ -23,7 +23,7 @@ UNISWAP_FACTORY = "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f"
 USDC = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
 
 # Dictionary containing overrides for certain token addresses.
-# This is useful in cases where the token's contract might not 
+# This is useful in cases where the token's contract might not
 # provide all the necessary details or has known discrepancies.
 TOKEN_OVERRIDES = {
     "0x9f8F72aA9304c8B593d555F12eF6589cC3A579A2": {"symbol": "MKR"},
@@ -41,3 +41,8 @@ DEFAULT_RPC_PROVIDER = "wss://eth.llamarpc.com"
 # Default color for the print messages in the terminal.
 # This helps to provide a consistent visual feedback.
 DEFAULT_PRINT_COLOR = "green"
+
+# Default number of recent blocks to consider when filtering for active pairs.
+# If this value is altered during runtime using the --recent-blocks-number option,
+# it will trigger a complete data refresh to ensure consistency.
+DEFAULT_RECENT_BLOCKS_NUMBER = 10000

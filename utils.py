@@ -59,11 +59,11 @@ def connect_to_rpc_provider(rpc: str) -> Web3:
         ConnectionError: If unable to connect to the given RPC provider.
     """
 
-    if rpc.startswith(('http://', 'https://')):
+    if rpc.startswith(("http://", "https://")):
         w3 = Web3(Web3.HTTPProvider(rpc))
-    elif rpc.startswith(('ws://', 'wss://')):
+    elif rpc.startswith(("ws://", "wss://")):
         w3 = Web3(Web3.WebsocketProvider(rpc))
-    elif rpc.endswith('.ipc'):
+    elif rpc.endswith(".ipc"):
         w3 = Web3(Web3.IPCProvider(rpc))
     else:
         log.error("Invalid RPC URL format.")
