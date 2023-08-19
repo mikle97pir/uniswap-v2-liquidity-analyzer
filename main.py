@@ -81,7 +81,7 @@ def get_pairs(w3: Web3, ABIs: dict) -> list[str]:
             pair = uniswap_factory_contract.functions.allPairs(i).call()
             pairs.append(pair)
         except Exception as e:
-            log.warning(f"Failed to fetch pair at index {i}: {str(e)}")
+            log.warning(f"Failed to fetch pair at index {i} {str(e)}")
 
     log.info(f"Successfully fetched {len(pairs)} pairs from Uniswap Factory.")
     return pairs
