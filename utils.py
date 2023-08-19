@@ -317,6 +317,9 @@ def get_tokens_from_pairs(pairs_info: dict) -> set:
 from web3 import Web3
 
 
+from rich.progress import track
+
+
 def get_recent_contracts(w3: Web3, tx_receipts: list, ABIs: dict) -> set:
     """
     Extract unique contract addresses from a list of transaction receipts based on the 'Swap' event.
@@ -341,7 +344,7 @@ def get_recent_contracts(w3: Web3, tx_receipts: list, ABIs: dict) -> set:
 
     recent_contracts = set()
 
-    for receipt in tx_receipts:
+    for receipt in track(tx_receipts, description="Processing transaction receipts..."):
         for receipt_log in receipt.logs:
             try:
                 # Decode the log using the UniswapV2Pair ABI
