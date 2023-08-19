@@ -541,7 +541,7 @@ def main(
         refresh_pairs = True
         refresh_all_but_pairs = True
 
-    # If the 'refresh_all' option is set, update all refresh flags but pairs
+    # If the 'refresh_all_but_pairs' option is set, update all refresh flags but pairs
     if refresh_all_but_pairs:
         refresh_blocks = True
         refresh_pairs_info = True
