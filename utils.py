@@ -314,27 +314,47 @@ def get_tokens_from_pairs(pairs_info: dict) -> set:
     return tokens
 
 
-def get_recent_contracts(tx_receipts: list) -> set:
+from web3 import Web3
+
+
+def get_recent_contracts(w3: Web3, tx_receipts: list, ABIs: dict) -> set:
     """
-    Extract unique contract addresses from a list of transaction receipts.
+    Extract unique contract addresses from a list of transaction receipts based on the 'Swap' event.
+
+    This function iterates over the logs in each transaction receipt, using the UniswapV2Pair ABI
+    to decode the logs. It filters for logs that correspond to the "Swap" event. For each of
+    these logs, the Ethereum contract address is extracted and stored.
 
     Parameters:
-    - tx_receipts (list): A list containing transaction receipts. Each receipt
-      has logs, and each log entry contains an "address" field.
+    - w3 (Web3): The Web3 instance used for Ethereum blockchain interactions.
+    - tx_receipts (list): A list containing transaction receipts. Each receipt has logs,
+      and each log entry contains an "address" field.
+    - ABIs (dict): Dictionary containing the Application Binary Interfaces (ABIs) for the necessary Ethereum contracts.
 
     Returns:
-    - set: A set containing unique Ethereum contract addresses extracted from
-      the logs in the transaction receipts.
+    - set: A set containing unique Ethereum contract addresses extracted from the
+      logs corresponding to the 'Swap' event in the transaction receipts.
     """
+
+    pair_contract = w3.eth.contract(abi=ABIs["UniswapV2Pair"])
+    swap_event = pair_contract.events.Swap()
 
     recent_contracts = set()
 
     for receipt in tx_receipts:
         for receipt_log in receipt.logs:
-            recent_contracts.add(receipt_log["address"])
+            try:
+                # Decode the log using the UniswapV2Pair ABI
+                decoded_log = swap_event.process_log(receipt_log)
+
+                # If the log is successfully decoded as a "Swap" event
+                if decoded_log:
+                    recent_contracts.add(receipt_log["address"])
+            except Exception as e:
+                continue
 
     log.info(
-        f"Successfully extracted {len(recent_contracts)} unique contract addresses from transaction receipts."
+        f"Successfully extracted {len(recent_contracts)} unique contract addresses from 'Swap' event in transaction receipts."
     )
 
     return recent_contracts

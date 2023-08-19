@@ -169,26 +169,28 @@ def get_recent_tx_receipts(w3: Web3, nblocks: int) -> list[web3.types.TxReceipt]
 
 @using_cache("active_pairs")
 def filter_inactive_pairs(
-    w3: Web3, uniswap_pairs: list[str], nblocks: int
+    w3: Web3, uniswap_pairs: list[str], nblocks: int, ABIs: dict
 ) -> list[str]:
     """
     Filter out inactive pairs from the provided Uniswap pairs based on recent transaction activity.
 
-    This function checks which of the provided Uniswap pairs have been involved in transactions in the
-    most recent blocks and returns those pairs. The result can be cached and can be retrieved from cache if it exists
-    and if the refresh flag isn't set.
+    This function checks which of the provided Uniswap pairs have been involved in
+    "Swap" events in the most recent blocks and returns those pairs. The result can
+    be cached and can be retrieved from cache if it exists and if the refresh flag
+    isn't set.
 
     Parameters:
     - w3 (Web3): The Web3 instance used for Ethereum blockchain interactions.
     - uniswap_pairs (list[str]): The list of Uniswap pairs to be filtered.
     - nblocks (int): The number of most recent blocks to consider.
+    - ABIs (dict): Dictionary containing the Application Binary Interfaces (ABIs) for Ethereum contracts.
 
     Returns:
-    - list[str]: A list of active Uniswap pairs based on recent transaction activity.
+    - list[str]: A list of active Uniswap pairs based on recent "Swap" events.
     """
 
     tx_receipts = get_recent_tx_receipts(w3, nblocks, refresh=True)
-    recent_contracts = get_recent_contracts(tx_receipts)
+    recent_contracts = get_recent_contracts(w3, tx_receipts, ABIs)
     active_pairs = [pair for pair in uniswap_pairs if pair in recent_contracts]
 
     log.info(
@@ -533,10 +535,7 @@ def main(
         # Filter to only include active pairs based on recent activity
         print_colored("\nFiltering active pairs...")
         active_pairs = filter_inactive_pairs(
-            w3,
-            pairs,
-            recent_blocks_number,
-            refresh=refresh_blocks,
+            w3, pairs, recent_blocks_number, ABIs, refresh=refresh_blocks
         )
 
         # Gather detailed information about the active pairs
