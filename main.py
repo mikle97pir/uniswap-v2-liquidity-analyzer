@@ -158,7 +158,7 @@ def get_recent_tx_receipts(w3: Web3, nblocks: int) -> list[web3.types.TxReceipt]
             tx_receipts.append(tx_receipt)
         except Exception as e:
             log.warning(
-                f"Failed to fetch transaction receipt for {tx_hash.hex()}: {str(e)}"
+                f"Failed to fetch transaction receipt for {tx_hash.hex()} {str(e)}"
             )
 
     log.info(
