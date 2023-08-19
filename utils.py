@@ -208,7 +208,7 @@ def get_token_info(w3: Web3, ABIs: dict, token) -> dict:
     Parameters:
     - w3 (Web3): The Web3 instance to interact with the Ethereum network.
     - ABIs (dict): A dictionary of contract names to their ABIs.
-    - token (str): The Ethereum address of the ERC20 token contract.
+    - token: The Ethereum address of the ERC20 token contract.
 
     Returns:
     - dict: A dictionary containing the symbol and decimals of the token.
@@ -256,10 +256,6 @@ def get_pairs_info(w3: Web3, ABIs: dict, pairs: list[str]) -> dict[str, dict]:
     Returns:
     - dict[str, dict]: A dictionary where the keys are pair addresses and the values are
       dictionaries containing information about each pair.
-
-    Uses:
-    - The function leverages the `get_pair_info` function for each pair in the list.
-    - It also uses `track` to provide a progress bar while fetching the pair information.
     """
 
     pairs_info = {
@@ -281,10 +277,6 @@ def get_tokens_info(w3: Web3, ABIs: dict, tokens: list[str]) -> dict[str, dict]:
     Returns:
     - dict[str, dict]: A dictionary where the keys are token addresses and the values are
       dictionaries containing information about each token.
-
-    Uses:
-    - The function leverages the `get_token_info` function for each token in the list.
-    - It also uses `track` to provide a progress bar while fetching the token information.
     """
 
     tokens_info = {
@@ -314,35 +306,28 @@ def get_tokens_from_pairs(pairs_info: dict) -> set:
     return tokens
 
 
-from web3 import Web3
-
-
-from rich.progress import track
-
-
-def get_recent_contracts(w3: Web3, tx_receipts: list, ABIs: dict) -> set:
+def get_recent_contracts(w3: Web3, tx_receipts: list, ABIs: dict) -> dict:
     """
-    Extract unique contract addresses from a list of transaction receipts based on the 'Swap' event.
+    Extract contract addresses with recent "Swap" events and their "Swap" event counts from a list of transaction receipts.
 
     This function iterates over the logs in each transaction receipt, using the UniswapV2Pair ABI
     to decode the logs. It filters for logs that correspond to the "Swap" event. For each of
-    these logs, the Ethereum contract address is extracted and stored.
+    these logs, the Ethereum contract address is extracted, and its occurrence count is updated.
 
     Parameters:
     - w3 (Web3): The Web3 instance used for Ethereum blockchain interactions.
-    - tx_receipts (list): A list containing transaction receipts. Each receipt has logs,
-      and each log entry contains an "address" field.
+    - tx_receipts (list): A list containing transaction receipts.
     - ABIs (dict): Dictionary containing the Application Binary Interfaces (ABIs) for the necessary Ethereum contracts.
 
     Returns:
-    - set: A set containing unique Ethereum contract addresses extracted from the
-      logs corresponding to the 'Swap' event in the transaction receipts.
+    - dict: A dictionary with Ethereum contract addresses as keys and the number of 'Swap'
+      events for each contract as values.
     """
 
     pair_contract = w3.eth.contract(abi=ABIs["UniswapV2Pair"])
     swap_event = pair_contract.events.Swap()
 
-    recent_contracts = set()
+    recent_contracts = {}
 
     for receipt in track(tx_receipts, description="Processing transaction receipts..."):
         for receipt_log in receipt.logs:
@@ -352,12 +337,13 @@ def get_recent_contracts(w3: Web3, tx_receipts: list, ABIs: dict) -> set:
 
                 # If the log is successfully decoded as a "Swap" event
                 if decoded_log:
-                    recent_contracts.add(receipt_log["address"])
+                    address = receipt_log["address"]
+                    recent_contracts[address] = recent_contracts.get(address, 0) + 1
             except Exception as e:
                 continue
 
     log.info(
-        f"Successfully extracted {len(recent_contracts)} unique contract addresses from 'Swap' event in transaction receipts."
+        f"Successfully extracted {len(recent_contracts)} unique contract addresses with 'Swap' event counts from transaction receipts."
     )
 
     return recent_contracts

@@ -100,7 +100,7 @@ def get_recent_blocks(w3: Web3, nblocks: int) -> list[web3.types.BlockData]:
     - nblocks (int): The number of most recent blocks to retrieve.
 
     Returns:
-    - list[dict]: A list of block details in dictionary format.
+    - list[BlockData]: A list of block details in dictionary format.
 
     Raises:
     - Exception: If there's an issue accessing the Ethereum blockchain or fetching the blocks.
@@ -144,7 +144,7 @@ def get_recent_tx_receipts(w3: Web3, nblocks: int) -> list[web3.types.TxReceipt]
     - nblocks (int): The number of most recent blocks to consider.
 
     Returns:
-    - list[dict]: A list of transaction receipts in dictionary format.
+    - list[TxReceipt]: A list of transaction receipts in dictionary format.
     """
     blocks = get_recent_blocks(w3, nblocks, refresh=True)
     tx_hashes = [tx_hash for block in blocks for tx_hash in block.transactions]
@@ -167,16 +167,16 @@ def get_recent_tx_receipts(w3: Web3, nblocks: int) -> list[web3.types.TxReceipt]
     return tx_receipts
 
 
-@using_cache("active_pairs")
+@using_cache("active_pair_swap_counts")
 def filter_inactive_pairs(
     w3: Web3, uniswap_pairs: list[str], nblocks: int, ABIs: dict
-) -> list[str]:
+) -> dict:
     """
     Filter out inactive pairs from the provided Uniswap pairs based on recent transaction activity.
 
     This function checks which of the provided Uniswap pairs have been involved in
-    "Swap" events in the most recent blocks and returns those pairs. The result can
-    be cached and can be retrieved from cache if it exists and if the refresh flag
+    "Swap" events in the most recent blocks and returns those pairs along with their swap counts.
+    The result can be cached and can be retrieved from cache if it exists and if the refresh flag
     isn't set.
 
     Parameters:
@@ -186,41 +186,55 @@ def filter_inactive_pairs(
     - ABIs (dict): Dictionary containing the Application Binary Interfaces (ABIs) for Ethereum contracts.
 
     Returns:
-    - list[str]: A list of active Uniswap pairs based on recent "Swap" events.
+    - dict: A dictionary of active Uniswap pairs mapped to their "Swap" counts based on recent "Swap" events.
     """
 
     tx_receipts = get_recent_tx_receipts(w3, nblocks, refresh=True)
     recent_contracts = get_recent_contracts(w3, tx_receipts, ABIs)
-    active_pairs = [pair for pair in uniswap_pairs if pair in recent_contracts]
+    active_pair_swap_counts = {
+        pair: recent_contracts[pair]
+        for pair in uniswap_pairs
+        if pair in recent_contracts
+    }
 
     log.info(
-        f"Successfully filtered {len(active_pairs)} active pairs out of {len(uniswap_pairs)} total pairs."
+        f"Successfully filtered {len(active_pair_swap_counts)} active pairs with their 'Swap' counts out of {len(uniswap_pairs)} total pairs."
     )
 
-    return active_pairs
+    return active_pair_swap_counts
 
 
 @using_cache("active_pairs_info")
-def get_active_pairs_info(w3: Web3, ABIs: dict, active_pairs: list[str]) -> dict:
+def get_active_pairs_info(
+    w3: Web3, ABIs: dict, active_pairs: list[str], active_pairs_with_counts: dict
+) -> dict:
     """
-    Retrieve detailed information for the given active pairs.
+    Retrieve detailed information for the given active pairs, including swap counts.
 
     This function uses the `get_pairs_info` function to fetch details about each active pair.
-    The result can be cached and can be retrieved from cache if it exists and if the refresh flag isn't set.
+    Additionally, it appends the swap count information for each pair. The result can be cached
+    and can be retrieved from cache if it exists and if the refresh flag isn't set.
 
     Parameters:
     - w3 (Web3): The Web3 instance used for Ethereum blockchain interactions.
     - ABIs (dict): Dictionary containing ABIs needed for Ethereum contract interactions.
     - active_pairs (list[str]): List of active Uniswap pairs for which information is to be retrieved.
+    - active_pairs_with_counts (dict): Dictionary containing swap count information for each active pair.
 
     Returns:
-    - dict: A dictionary containing information about each active pair.
+    - dict: A dictionary containing detailed information, including swap counts, about each active pair.
     """
 
     active_pairs_info = get_pairs_info(w3, ABIs, active_pairs)
+
+    # Incorporate swap counts into the active pairs' information
+    for pair, info in active_pairs_info.items():
+        info["swap_count"] = active_pairs_with_counts[pair]
+
     log.info(
-        f"Successfully retrieved information for {len(active_pairs_info)} active pairs."
+        f"Successfully retrieved information, including swap counts, for {len(active_pairs_info)} active pairs."
     )
+
     return active_pairs_info
 
 
@@ -268,27 +282,43 @@ def create_token_graph(
 ) -> ig.Graph:
     """
     Creates a graph representation of token pairs where each vertex represents a token and
-    each edge represents a token pair.
+    each edge represents a token pair. Edges are weighted by the inverse of the swap counts.
 
     Parameters:
     - vertex_to_token (list[str]): A list where indices represent vertex IDs and values are their corresponding token addresses.
     - token_to_vertex (dict[str, int]): A mapping from token addresses to their corresponding vertex IDs.
     - pairs (list[str]): A list of token pairs.
-    - pairs_info (dict[str, dict]): Detailed information about each pair.
+    - pairs_info (dict[str, dict]): Detailed information about each pair, including swap counts.
 
     Returns:
-    - ig.Graph: A graph where vertices are tokens and edges represent pairs.
+    - ig.Graph: A graph where vertices are tokens and edges represent pairs, weighted by the inverse of swap counts.
     """
 
     # Initializing the graph with the number of tokens
     token_graph = ig.Graph(n=len(vertex_to_token))
+
+    # Collect edges and their weights
+    edges = []
+    weights = []
 
     # Loop through pairs to populate the graph with edges based on the pairs info
     for pair in pairs:
         info = pairs_info[pair]
         vertice0 = token_to_vertex[info["token0"]]
         vertice1 = token_to_vertex[info["token1"]]
-        token_graph.add_edges([(vertice0, vertice1)])
+
+        # Get swap count from pairs info and compute its inverse
+        swap_count = info["swap_count"]
+        inverse_swap_count = 1 / swap_count
+
+        # Append the edge and its weight
+        edges.append((vertice0, vertice1))
+        weights.append(inverse_swap_count)
+
+    # Add edges to the graph
+    token_graph.add_edges(edges)
+    # Set the weights for the edges
+    token_graph.es["weight"] = weights
 
     log.info(
         "Token graph successfully created with {0} vertices and {1} edges.".format(
@@ -534,14 +564,15 @@ def main(
 
         # Filter to only include active pairs based on recent activity
         print_colored("\nFiltering active pairs...")
-        active_pairs = filter_inactive_pairs(
+        active_pair_swap_counts = filter_inactive_pairs(
             w3, pairs, recent_blocks_number, ABIs, refresh=refresh_blocks
         )
+        active_pairs = list(active_pair_swap_counts.keys())
 
         # Gather detailed information about the active pairs
         print_colored("\nGathering info about active pairs...")
         active_pairs_info = get_active_pairs_info(
-            w3, ABIs, active_pairs, refresh=refresh_pairs_info
+            w3, ABIs, active_pairs, active_pair_swap_counts, refresh=refresh_pairs_info
         )
 
         # Extract tokens involved in the active pairs
@@ -563,6 +594,7 @@ def main(
         token_graph = create_token_graph(
             vertex_to_token, token_to_vertex, active_pairs, active_pairs_info
         )
+        print(token_graph.es["weight"])
 
         # Identify connected components in the token graph
         print_colored("\nFinding main component in the graph...")
@@ -575,6 +607,7 @@ def main(
             token_to_vertex[constants.USDC],
             to=main_component,
             mode="all",
+            weights=token_graph.es["weight"],
             output="epath",
         )
 
@@ -582,6 +615,7 @@ def main(
             token_to_vertex[constants.USDC],
             to=main_component,
             mode="all",
+            weights=token_graph.es["weight"],
             output="vpath",
         )
 
