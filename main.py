@@ -594,7 +594,6 @@ def main(
         token_graph = create_token_graph(
             vertex_to_token, token_to_vertex, active_pairs, active_pairs_info
         )
-        print(token_graph.es["weight"])
 
         # Identify connected components in the token graph
         print_colored("\nFinding main component in the graph...")
